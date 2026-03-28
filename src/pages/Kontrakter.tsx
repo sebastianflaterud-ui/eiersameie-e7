@@ -10,11 +10,13 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { formatBelop, formatDato, formatDatoFull } from '@/lib/format';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { formatBelop, formatDato } from '@/lib/format';
 import { toast } from 'sonner';
-import { ArrowLeft, Plus, FileText, Download, UserPlus, UserMinus, Edit2, Calendar } from 'lucide-react';
+import { ArrowLeft, Plus, FileText, Download, UserPlus, UserMinus, Printer } from 'lucide-react';
 import { pdf } from '@react-pdf/renderer';
 import { LeiekontraktPDF } from '@/components/kontrakter/LeiekontraktPDF';
+import { KontraktForhandsvisning } from '@/components/kontrakter/KontraktForhandsvisning';
 
 interface Kontrakt {
   id: string; navn: string; boenhet: string; type: string; startdato: string; sluttdato: string | null;
@@ -94,21 +96,14 @@ export default function Kontrakter() {
       const kontraktVersjoner = versjoner.filter(v => v.kontrakt_id === kontrakt.id);
       const versjonNr = (kontraktVersjoner.length > 0 ? Math.max(...kontraktVersjoner.map(v => v.versjon)) : 0) + 1;
 
-      const pdfData = {
-        kontrakt, utleiere, aktiveLt, tidligereLt,
-        leietakere, enheter, versjonNr,
-        dato: new Date().toISOString(),
-      };
-
-      const blob = await pdf(<LeiekontraktPDF data={pdfData} />).toBlob();
+      const blob = await pdf(<LeiekontraktPDF data={{ kontrakt, utleiere, aktiveLt, tidligereLt, leietakere, enheter, versjonNr, dato: new Date().toISOString() }} />).toBlob();
       const filename = `kontrakt_${kontrakt.id}_v${versjonNr}.pdf`;
       const { error: uploadError } = await supabase.storage.from('kontrakter').upload(filename, blob, { contentType: 'application/pdf', upsert: true });
       if (uploadError) throw uploadError;
 
       const { error: insertError } = await supabase.from('kontrakt_versjoner').insert({
         user_id: user.id, kontrakt_id: kontrakt.id, versjon: versjonNr,
-        endring_beskrivelse: changeSummary || 'Manuell generering',
-        storage_path: filename,
+        endring_beskrivelse: changeSummary || 'Manuell generering', storage_path: filename,
       });
       if (insertError) throw insertError;
 
@@ -126,6 +121,21 @@ export default function Kontrakter() {
     if (error) { toast.error('Kunne ikke laste ned'); return; }
     const url = URL.createObjectURL(data);
     const a = document.createElement('a'); a.href = url; a.download = storagePath; a.click();
+  };
+
+  const downloadCurrentPDF = async () => {
+    if (!selected) return;
+    const aktiveLt = kontraktLeietakere.filter(kl => kl.kontrakt_id === selected.id && kl.aktiv);
+    const tidligereLt = kontraktLeietakere.filter(kl => kl.kontrakt_id === selected.id && !kl.aktiv);
+    const kontraktVersjoner = versjoner.filter(v => v.kontrakt_id === selected.id);
+    const versjonNr = (kontraktVersjoner.length > 0 ? Math.max(...kontraktVersjoner.map(v => v.versjon)) : 0) + 1;
+    try {
+      const blob = await pdf(<LeiekontraktPDF data={{ kontrakt: selected, utleiere, aktiveLt, tidligereLt, leietakere, enheter, versjonNr, dato: new Date().toISOString() }} />).toBlob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a'); a.href = url; a.download = `leiekontrakt_${selected.navn.replace(/\s/g, '_')}.pdf`; a.click();
+    } catch (e: any) {
+      toast.error('Feil: ' + e.message);
+    }
   };
 
   const addLeietaker = async () => {
@@ -185,7 +195,7 @@ export default function Kontrakter() {
     await generatePDF(selected, `Leieendring: ${getLt(kl.leietaker_id)?.navn}`);
   };
 
-  // Detail view
+  // ── Detail view ──
   if (selected) {
     const aktiveLt = kontraktLeietakere.filter(kl => kl.kontrakt_id === selected.id && kl.aktiv);
     const tidligereLt = kontraktLeietakere.filter(kl => kl.kontrakt_id === selected.id && !kl.aktiv);
@@ -193,6 +203,7 @@ export default function Kontrakter() {
     const kontraktVersjoner = versjoner.filter(v => v.kontrakt_id === selected.id);
     const totalLeie = aktiveLt.reduce((s, kl) => s + kl.maanedsleie, 0);
     const availableEnheter = enheter.filter(e => e.boenhet === selected.boenhet && !e.disponert_av && !aktiveLt.some(kl => kl.enhet_id === e.id));
+    const versjonNr = (kontraktVersjoner.length > 0 ? Math.max(...kontraktVersjoner.map(v => v.versjon)) : 0) + 1;
 
     const hendelseBadge = (type: string) => {
       const colors: Record<string, string> = {
@@ -204,12 +215,9 @@ export default function Kontrakter() {
         annet: 'bg-gray-100 text-gray-800',
       };
       const labels: Record<string, string> = {
-        leietaker_lagt_til: 'Ny leietaker',
-        leietaker_fjernet: 'Leietaker fjernet',
-        leie_endret: 'Leieendring',
-        kontrakt_opprettet: 'Opprettet',
-        oppsigelse: 'Oppsigelse',
-        annet: 'Annet',
+        leietaker_lagt_til: 'Ny leietaker', leietaker_fjernet: 'Leietaker fjernet',
+        leie_endret: 'Leieendring', kontrakt_opprettet: 'Opprettet',
+        oppsigelse: 'Oppsigelse', annet: 'Annet',
       };
       return <span className={`px-2 py-0.5 rounded text-xs font-medium ${colors[type] || colors.annet}`}>{labels[type] || type}</span>;
     };
@@ -222,156 +230,184 @@ export default function Kontrakter() {
           <Badge variant={statusVariant(selected.kontrakt_status)}>{selected.kontrakt_status}</Badge>
         </div>
 
-        {/* Kontraktsinformasjon */}
-        <Card>
-          <CardHeader><CardTitle className="text-base">Kontraktsinformasjon</CardTitle></CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-              <div><span className="text-muted-foreground">Boenhet:</span><br /><span className="font-medium">{selected.boenhet}</span></div>
-              <div><span className="text-muted-foreground">Type:</span><br /><span className="font-medium">{selected.type === 'langtid' ? 'Langtidsleie' : 'Korttidsleie'}</span></div>
-              <div><span className="text-muted-foreground">Startdato:</span><br /><span className="font-medium">{formatDato(selected.startdato)}</span></div>
-              <div><span className="text-muted-foreground">Oppsigelsestid:</span><br /><span className="font-medium">{selected.oppsigelsestid_mnd} mnd</span></div>
-              <div><span className="text-muted-foreground">Depositum:</span><br /><span className="font-medium">{selected.depositum_multiplier}× månedsleie</span></div>
-              <div><span className="text-muted-foreground">Betalingskonto:</span><br /><span className="font-medium font-mono">{selected.betalingskonto}</span></div>
-              <div><span className="text-muted-foreground">Inkludert:</span><br /><span className="font-medium">{selected.inkludert_i_leie}</span></div>
-              <div><span className="text-muted-foreground">Ikke inkludert:</span><br /><span className="font-medium">{selected.ikke_inkludert}</span></div>
-            </div>
-          </CardContent>
-        </Card>
+        <Tabs defaultValue="rediger">
+          <div className="flex items-center justify-between mb-4">
+            <TabsList>
+              <TabsTrigger value="rediger">Rediger</TabsTrigger>
+              <TabsTrigger value="forhandsvisning">Forhåndsvisning</TabsTrigger>
+              <TabsTrigger value="versjoner">Versjoner ({kontraktVersjoner.length})</TabsTrigger>
+              <TabsTrigger value="bilag">Bilag</TabsTrigger>
+            </TabsList>
+          </div>
 
-        {/* Utleiere */}
-        <Card>
-          <CardHeader><CardTitle className="text-base">Utleiere</CardTitle></CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {utleiere.map(e => (
-                <div key={e.id} className="p-3 border rounded-lg text-sm space-y-1">
-                  <div className="font-semibold">{e.navn}</div>
-                  {e.type === 'aksjeselskap' && e.identifikator && <div className="text-muted-foreground">Org.nr: {e.identifikator}</div>}
-                  {e.epost && <div className="text-muted-foreground">{e.epost}</div>}
-                  {e.telefon && <div className="text-muted-foreground">{e.telefon}</div>}
+          {/* ── Rediger Tab ── */}
+          <TabsContent value="rediger" className="space-y-6">
+            <Card>
+              <CardHeader><CardTitle className="text-base">Kontraktsinformasjon</CardTitle></CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                  <div><span className="text-muted-foreground">Boenhet:</span><br /><span className="font-medium">{selected.boenhet}</span></div>
+                  <div><span className="text-muted-foreground">Type:</span><br /><span className="font-medium">{selected.type === 'langtid' ? 'Langtidsleie' : 'Korttidsleie'}</span></div>
+                  <div><span className="text-muted-foreground">Startdato:</span><br /><span className="font-medium">{formatDato(selected.startdato)}</span></div>
+                  <div><span className="text-muted-foreground">Oppsigelsestid:</span><br /><span className="font-medium">{selected.oppsigelsestid_mnd} mnd</span></div>
+                  <div><span className="text-muted-foreground">Depositum:</span><br /><span className="font-medium">{selected.depositum_multiplier}× månedsleie</span></div>
+                  <div><span className="text-muted-foreground">Betalingskonto:</span><br /><span className="font-medium font-mono">{selected.betalingskonto}</span></div>
+                  <div><span className="text-muted-foreground">Inkludert:</span><br /><span className="font-medium">{selected.inkludert_i_leie}</span></div>
+                  <div><span className="text-muted-foreground">Ikke inkludert:</span><br /><span className="font-medium">{selected.ikke_inkludert}</span></div>
                 </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
+              </CardContent>
+            </Card>
 
-        {/* Aktive leietakere */}
-        <Card>
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-base">Aktive leietakere ({aktiveLt.length})</CardTitle>
-              <div className="flex items-center gap-2">
-                <span className="text-sm text-muted-foreground font-mono">Total: {formatBelop(totalLeie)}/mnd</span>
-                <Button size="sm" onClick={() => setShowAddLt(true)}><UserPlus className="h-4 w-4 mr-1" />Legg til</Button>
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent>
-            {aktiveLt.length === 0 ? <p className="text-sm text-muted-foreground">Ingen aktive leietakere.</p> : (
-              <Table>
-                <TableHeader><TableRow>
-                  <TableHead>Leietaker</TableHead><TableHead>Rom</TableHead><TableHead>Etasje</TableHead>
-                  <TableHead className="text-right">Månedsleie</TableHead><TableHead className="text-right">Depositum</TableHead>
-                  <TableHead>Innflytting</TableHead><TableHead></TableHead>
-                </TableRow></TableHeader>
-                <TableBody>
-                  {aktiveLt.map(kl => {
-                    const lt = getLt(kl.leietaker_id);
-                    const enhet = getEnhet(kl.enhet_id);
-                    return (
-                      <TableRow key={kl.id}>
-                        <TableCell className="font-medium">{lt?.navn}</TableCell>
-                        <TableCell>{enhet?.navn}</TableCell>
-                        <TableCell>{enhet?.etasje || '-'}</TableCell>
-                        <TableCell className="text-right font-mono">
-                          {editingLeie === kl.id ? (
-                            <div className="flex items-center gap-1 justify-end">
-                              <Input type="number" value={newLeie} onChange={e => setNewLeie(e.target.value)} className="w-24 h-7 text-right" />
-                              <Button size="sm" variant="ghost" className="h-7 px-2" onClick={() => updateLeie(kl)}>✓</Button>
-                              <Button size="sm" variant="ghost" className="h-7 px-2" onClick={() => setEditingLeie(null)}>✗</Button>
-                            </div>
-                          ) : (
-                            <span className="cursor-pointer hover:underline" onClick={() => { setEditingLeie(kl.id); setNewLeie(String(kl.maanedsleie)); }}>
-                              {formatBelop(kl.maanedsleie)}
-                            </span>
-                          )}
-                        </TableCell>
-                        <TableCell className="text-right font-mono">{formatBelop(kl.depositum)}</TableCell>
-                        <TableCell>{formatDato(kl.innflytting)}</TableCell>
-                        <TableCell>
-                          <Button size="sm" variant="ghost" className="text-red-500 h-7" onClick={() => removeLeietaker(kl)}>
-                            <UserMinus className="h-3 w-3" />
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
-                </TableBody>
-              </Table>
-            )}
-          </CardContent>
-        </Card>
+            <Card>
+              <CardHeader><CardTitle className="text-base">Utleiere</CardTitle></CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {utleiere.map(e => (
+                    <div key={e.id} className="p-3 border rounded-lg text-sm space-y-1">
+                      <div className="font-semibold">{e.navn}</div>
+                      {e.type === 'aksjeselskap' && e.identifikator && <div className="text-muted-foreground">Org.nr: {e.identifikator}</div>}
+                      {e.epost && <div className="text-muted-foreground">{e.epost}</div>}
+                      {e.telefon && <div className="text-muted-foreground">{e.telefon}</div>}
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
 
-        {/* Tidligere leietakere */}
-        {tidligereLt.length > 0 && (
-          <Card>
-            <CardHeader><CardTitle className="text-base">Tidligere leietakere</CardTitle></CardHeader>
-            <CardContent>
-              <Table>
-                <TableHeader><TableRow>
-                  <TableHead>Leietaker</TableHead><TableHead>Rom</TableHead><TableHead>Innflytting</TableHead>
-                  <TableHead>Utflytting</TableHead><TableHead className="text-right">Siste leie</TableHead>
-                </TableRow></TableHeader>
-                <TableBody>
-                  {tidligereLt.map(kl => {
-                    const lt = getLt(kl.leietaker_id);
-                    const enhet = getEnhet(kl.enhet_id);
-                    return (
-                      <TableRow key={kl.id}>
-                        <TableCell>{lt?.navn}</TableCell>
-                        <TableCell>{enhet?.navn}</TableCell>
-                        <TableCell>{formatDato(kl.innflytting)}</TableCell>
-                        <TableCell>{kl.utflytting ? formatDato(kl.utflytting) : '-'}</TableCell>
-                        <TableCell className="text-right font-mono">{formatBelop(kl.maanedsleie)}</TableCell>
-                      </TableRow>
-                    );
-                  })}
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Hendelseslogg */}
-        <Card>
-          <CardHeader><CardTitle className="text-base">Hendelseslogg</CardTitle></CardHeader>
-          <CardContent>
-            {kontraktHendelser.length === 0 ? <p className="text-sm text-muted-foreground">Ingen hendelser.</p> : (
-              <div className="space-y-2">
-                {kontraktHendelser.map(h => (
-                  <div key={h.id} className="flex items-start gap-3 p-2 border-b last:border-0">
-                    <div className="text-xs text-muted-foreground font-mono w-20 shrink-0">{formatDato(h.dato)}</div>
-                    {hendelseBadge(h.hendelse_type)}
-                    <span className="text-sm">{h.beskrivelse}</span>
+            <Card>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-base">Aktive leietakere ({aktiveLt.length})</CardTitle>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-muted-foreground font-mono">Total: {formatBelop(totalLeie)}/mnd</span>
+                    <Button size="sm" onClick={() => setShowAddLt(true)}><UserPlus className="h-4 w-4 mr-1" />Legg til</Button>
                   </div>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
+                </div>
+              </CardHeader>
+              <CardContent>
+                {aktiveLt.length === 0 ? <p className="text-sm text-muted-foreground">Ingen aktive leietakere.</p> : (
+                  <Table>
+                    <TableHeader><TableRow>
+                      <TableHead>Leietaker</TableHead><TableHead>Rom</TableHead><TableHead>Etasje</TableHead>
+                      <TableHead className="text-right">Månedsleie</TableHead><TableHead className="text-right">Depositum</TableHead>
+                      <TableHead>Innflytting</TableHead><TableHead></TableHead>
+                    </TableRow></TableHeader>
+                    <TableBody>
+                      {aktiveLt.map(kl => {
+                        const lt = getLt(kl.leietaker_id);
+                        const enhet = getEnhet(kl.enhet_id);
+                        return (
+                          <TableRow key={kl.id}>
+                            <TableCell className="font-medium">{lt?.navn}</TableCell>
+                            <TableCell>{enhet?.navn}</TableCell>
+                            <TableCell>{enhet?.etasje || '-'}</TableCell>
+                            <TableCell className="text-right font-mono">
+                              {editingLeie === kl.id ? (
+                                <div className="flex items-center gap-1 justify-end">
+                                  <Input type="number" value={newLeie} onChange={e => setNewLeie(e.target.value)} className="w-24 h-7 text-right" />
+                                  <Button size="sm" variant="ghost" className="h-7 px-2" onClick={() => updateLeie(kl)}>✓</Button>
+                                  <Button size="sm" variant="ghost" className="h-7 px-2" onClick={() => setEditingLeie(null)}>✗</Button>
+                                </div>
+                              ) : (
+                                <span className="cursor-pointer hover:underline" onClick={() => { setEditingLeie(kl.id); setNewLeie(String(kl.maanedsleie)); }}>
+                                  {formatBelop(kl.maanedsleie)}
+                                </span>
+                              )}
+                            </TableCell>
+                            <TableCell className="text-right font-mono">{formatBelop(kl.depositum)}</TableCell>
+                            <TableCell>{formatDato(kl.innflytting)}</TableCell>
+                            <TableCell>
+                              <Button size="sm" variant="ghost" className="text-red-500 h-7" onClick={() => removeLeietaker(kl)}>
+                                <UserMinus className="h-3 w-3" />
+                              </Button>
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
+                    </TableBody>
+                  </Table>
+                )}
+              </CardContent>
+            </Card>
 
-        {/* PDF-versjoner */}
-        <Card>
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-base">PDF-versjoner</CardTitle>
+            {tidligereLt.length > 0 && (
+              <Card>
+                <CardHeader><CardTitle className="text-base">Tidligere leietakere</CardTitle></CardHeader>
+                <CardContent>
+                  <Table>
+                    <TableHeader><TableRow>
+                      <TableHead>Leietaker</TableHead><TableHead>Rom</TableHead><TableHead>Innflytting</TableHead>
+                      <TableHead>Utflytting</TableHead><TableHead className="text-right">Siste leie</TableHead>
+                    </TableRow></TableHeader>
+                    <TableBody>
+                      {tidligereLt.map(kl => {
+                        const lt = getLt(kl.leietaker_id);
+                        const enhet = getEnhet(kl.enhet_id);
+                        return (
+                          <TableRow key={kl.id}>
+                            <TableCell>{lt?.navn}</TableCell>
+                            <TableCell>{enhet?.navn}</TableCell>
+                            <TableCell>{formatDato(kl.innflytting)}</TableCell>
+                            <TableCell>{kl.utflytting ? formatDato(kl.utflytting) : '-'}</TableCell>
+                            <TableCell className="text-right font-mono">{formatBelop(kl.maanedsleie)}</TableCell>
+                          </TableRow>
+                        );
+                      })}
+                    </TableBody>
+                  </Table>
+                </CardContent>
+              </Card>
+            )}
+
+            <Card>
+              <CardHeader><CardTitle className="text-base">Hendelseslogg</CardTitle></CardHeader>
+              <CardContent>
+                {kontraktHendelser.length === 0 ? <p className="text-sm text-muted-foreground">Ingen hendelser.</p> : (
+                  <div className="space-y-2">
+                    {kontraktHendelser.map(h => (
+                      <div key={h.id} className="flex items-start gap-3 p-2 border-b last:border-0">
+                        <div className="text-xs text-muted-foreground font-mono w-20 shrink-0">{formatDato(h.dato)}</div>
+                        {hendelseBadge(h.hendelse_type)}
+                        <span className="text-sm">{h.beskrivelse}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* ── Forhåndsvisning Tab ── */}
+          <TabsContent value="forhandsvisning" className="space-y-4">
+            <div className="flex items-center gap-2 justify-end">
+              <Button size="sm" variant="outline" onClick={downloadCurrentPDF}>
+                <Download className="h-4 w-4 mr-1" /> Last ned PDF
+              </Button>
+              <Button size="sm" variant="outline" onClick={() => generatePDF(selected)} disabled={generating}>
+                <FileText className="h-4 w-4 mr-1" /> {generating ? 'Genererer...' : 'Generer ny versjon'}
+              </Button>
+              <Button size="sm" variant="outline" onClick={() => window.print()}>
+                <Printer className="h-4 w-4 mr-1" /> Skriv ut
+              </Button>
+            </div>
+            <KontraktForhandsvisning
+              kontrakt={selected}
+              utleiere={utleiere}
+              aktiveLt={aktiveLt}
+              tidligereLt={tidligereLt}
+              leietakere={leietakere}
+              enheter={enheter}
+              versjonNr={versjonNr}
+            />
+          </TabsContent>
+
+          {/* ── Versjoner Tab ── */}
+          <TabsContent value="versjoner" className="space-y-4">
+            <div className="flex justify-end">
               <Button size="sm" onClick={() => generatePDF(selected)} disabled={generating}>
                 <FileText className="h-4 w-4 mr-1" />{generating ? 'Genererer...' : 'Generer ny PDF'}
               </Button>
             </div>
-          </CardHeader>
-          <CardContent>
             {kontraktVersjoner.length === 0 ? <p className="text-sm text-muted-foreground">Ingen versjoner generert.</p> : (
               <Table>
                 <TableHeader><TableRow>
@@ -389,8 +425,17 @@ export default function Kontrakter() {
                 </TableBody>
               </Table>
             )}
-          </CardContent>
-        </Card>
+          </TabsContent>
+
+          {/* ── Bilag Tab ── */}
+          <TabsContent value="bilag">
+            <Card>
+              <CardContent className="pt-6">
+                <p className="text-sm text-muted-foreground">Bilag-opplasting kommer. Her kan du laste opp signerte kontrakter, tillegg og annen dokumentasjon.</p>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
 
         {/* Add leietaker dialog */}
         {showAddLt && (
@@ -426,7 +471,7 @@ export default function Kontrakter() {
     );
   }
 
-  // List view
+  // ── List view ──
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
