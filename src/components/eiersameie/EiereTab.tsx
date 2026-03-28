@@ -38,7 +38,7 @@ const emptyForm = {
   gyldig_fra: '', gyldig_til: '', notater: '',
 };
 
-export default function Eiere() {
+export default function EiereTab() {
   const { user } = useAuth();
   const [eiere, setEiere] = useState<Eier[]>([]);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -46,17 +46,13 @@ export default function Eiere() {
   const [form, setForm] = useState(emptyForm);
   const [tab, setTab] = useState('oversikt');
 
-  // Leieinntekter tab
   const [liYear, setLiYear] = useState(new Date().getFullYear());
   const [liData, setLiData] = useState<{ brutto: number; oppgjor: Record<string, number> }>({ brutto: 0, oppgjor: {} });
 
-  // Verdisimulator
   const [totalVerdi, setTotalVerdi] = useState(10000000);
 
-  // Historikk
   const [historikk, setHistorikk] = useState<HistorikkEvent[]>([]);
 
-  // Registrer endring
   const [regMode, setRegMode] = useState<'enkel' | 'avansert'>('enkel');
   const [regForm, setRegForm] = useState({ dato: '', type: 'overføring', beskrivelse: '', fra: '', til: '', beregnFraVerdi: true, boligverdi: 10000000, kjopesum: 0, prosent: 0 });
   const [advAndeler, setAdvAndeler] = useState<Record<string, number>>({});
@@ -88,7 +84,6 @@ export default function Eiere() {
       const til = (t as any).oppgjor_til || 'Ukjent';
       oppgjor[til] = (oppgjor[til] || 0) + Number(t.belop);
     }
-    // Also check 'ut' oppgjør transactions
     const { data: utData } = await supabase.from('transaksjoner').select('*')
       .eq('kategori', 'Eiersameie E7').eq('retning', 'ut')
       .gte('dato', `${liYear}-01-01`).lte('dato', `${liYear}-12-31`);
@@ -148,7 +143,6 @@ export default function Eiere() {
   const formatPct = (n: number) => n.toFixed(2).replace('.', ',') + ' %';
   const formatPct4 = (n: number) => n.toFixed(4).replace('.', ',') + ' %';
 
-  // Register change logic
   const registerEnkel = async () => {
     if (!user || !regForm.dato || !regForm.fra || !regForm.til) { toast.error('Fyll inn alle felter'); return; }
     const pct = regForm.beregnFraVerdi
@@ -177,7 +171,6 @@ export default function Eiere() {
     }));
     await supabase.from('eier_historikk_detaljer').insert(detaljer);
 
-    // Update eiere
     await supabase.from('eiere').update({
       eierandel_prosent: fraEier.eierandel_prosent - pct,
       kostnadsandel_prosent: fraEier.kostnadsandel_prosent - pct,
@@ -235,9 +228,7 @@ export default function Eiere() {
   const advSumOk = Math.abs(advSum - 100) < 0.01;
 
   return (
-    <div className="space-y-6">
-      <h1 className="text-2xl font-bold">Eiere — Eiersameie E7</h1>
-
+    <div className="space-y-6 mt-4">
       <Tabs value={tab} onValueChange={setTab}>
         <TabsList>
           <TabsTrigger value="oversikt">Oversikt</TabsTrigger>
@@ -247,7 +238,6 @@ export default function Eiere() {
           <TabsTrigger value="registrer">Registrer endring</TabsTrigger>
         </TabsList>
 
-        {/* ===== TAB 1: OVERSIKT ===== */}
         <TabsContent value="oversikt" className="space-y-6">
           {sumEierandel !== 100 && aktive.length > 0 && (
             <div className="flex items-center gap-2 p-3 bg-red-50 border border-red-200 rounded-lg">
@@ -311,7 +301,6 @@ export default function Eiere() {
           </div>
         </TabsContent>
 
-        {/* ===== TAB 2: LEIEINNTEKTER ===== */}
         <TabsContent value="leieinntekter" className="space-y-6">
           <div className="flex items-center justify-between">
             <h2 className="text-lg font-semibold">Fordeling av leieinntekter per eier</h2>
@@ -360,7 +349,6 @@ export default function Eiere() {
           </Card>
         </TabsContent>
 
-        {/* ===== TAB 3: VERDISIMULATOR ===== */}
         <TabsContent value="verdisimulator" className="space-y-6">
           <Card>
             <CardHeader><CardTitle>Boligens totalverdi</CardTitle></CardHeader>
@@ -405,7 +393,6 @@ export default function Eiere() {
           </div>
         </TabsContent>
 
-        {/* ===== TAB 4: HISTORIKK ===== */}
         <TabsContent value="historikk" className="space-y-4">
           {historikk.length === 0 && (
             <div className="text-center text-muted-foreground py-8">Ingen eierskapsendringer registrert ennå.</div>
@@ -472,7 +459,6 @@ export default function Eiere() {
           })}
         </TabsContent>
 
-        {/* ===== TAB 5: REGISTRER ENDRING ===== */}
         <TabsContent value="registrer" className="space-y-6">
           <div className="flex items-center justify-between">
             <h2 className="text-lg font-semibold">Registrer eierskapsendring</h2>
@@ -594,7 +580,6 @@ export default function Eiere() {
         </TabsContent>
       </Tabs>
 
-      {/* Edit dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="max-w-lg">
           <DialogHeader><DialogTitle>{editId ? 'Rediger eier' : 'Ny eier'}</DialogTitle></DialogHeader>

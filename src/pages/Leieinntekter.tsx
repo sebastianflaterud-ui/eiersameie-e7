@@ -1,6 +1,7 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { YearSelect } from '@/components/YearSelect';
 import { LeieforholdTab } from '@/components/leieinntekter/LeieforholdTab';
+import BeleggTab from '@/components/leieinntekter/BeleggTab';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -301,6 +302,7 @@ export default function Leieinntekter() {
           <TabsTrigger value="kobling">Kobling</TabsTrigger>
           <TabsTrigger value="maaned">Måned</TabsTrigger>
           <TabsTrigger value="aarsoversikt">Årsoversikt</TabsTrigger>
+          <TabsTrigger value="belegg">Belegg</TabsTrigger>
           <TabsTrigger value="innstillinger">Innstillinger</TabsTrigger>
         </TabsList>
 
@@ -585,6 +587,11 @@ export default function Leieinntekter() {
           )}
         </TabsContent>
 
+
+        {/* ===== BELEGG ===== */}
+        <TabsContent value="belegg">
+          <BeleggTab year={year} />
+        </TabsContent>
 
         {/* ===== INNSTILLINGER ===== */}
         <TabsContent value="innstillinger" className="space-y-6">

@@ -1,8 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
-import { YearSelect } from '@/components/YearSelect';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { formatBelop } from '@/lib/format';
@@ -16,8 +14,11 @@ interface Leieforhold {
 }
 interface Leietaker { id: string; navn: string; }
 
-export default function Beleggsoversikt() {
-  const [year, setYear] = useState(new Date().getFullYear());
+interface BeleggTabProps {
+  year: number;
+}
+
+export default function BeleggTab({ year }: BeleggTabProps) {
   const [enheter, setEnheter] = useState<Enhet[]>([]);
   const [leieforhold, setLeieforhold] = useState<Leieforhold[]>([]);
   const [leietakere, setLeietakere] = useState<Leietaker[]>([]);
@@ -83,12 +84,7 @@ export default function Beleggsoversikt() {
   const ledigeEnhetsmnd = occupiedPerMonth.reduce((s, v) => s + (utleieEnheter.length - v), 0);
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Beleggsoversikt</h1>
-        <YearSelect value={year} onChange={setYear} />
-      </div>
-
+    <div className="space-y-6 mt-4">
       <div className="border rounded-lg overflow-auto">
         <Table>
           <TableHeader>
