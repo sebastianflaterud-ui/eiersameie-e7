@@ -278,7 +278,7 @@ export default function Skatt() {
               <TableBody>
                 {fradragKostnader.map(t => (
                   <TableRow key={t.id}>
-                    <TableCell className="font-mono text-xs">{t.dato}</TableCell>
+                    <TableCell className="font-mono text-xs">{formatDato(t.dato)}</TableCell>
                     <TableCell className="text-sm">{t.beskrivelse_bank}</TableCell>
                     <TableCell className="text-sm">{t.kostnadstype || t.utgiftstype || '-'}</TableCell>
                     <TableCell className="text-sm">{t.leverandor || '-'}</TableCell>
@@ -391,7 +391,7 @@ export default function Skatt() {
               <TableBody>
                 {ikkeFradrag.map(t => (
                   <TableRow key={t.id}>
-                    <TableCell className="font-mono text-xs">{t.dato}</TableCell>
+                    <TableCell className="font-mono text-xs">{formatDato(t.dato)}</TableCell>
                     <TableCell className="text-sm">{t.beskrivelse_bank}</TableCell>
                     <TableCell className="text-sm">{t.underkategori || '-'}</TableCell>
                     <TableCell className="text-right font-mono">{formatBelop(t.belop)}</TableCell>
@@ -418,7 +418,7 @@ export default function Skatt() {
               <TableBody>
                 {oppgjorTxs.map(t => (
                   <TableRow key={t.id}>
-                    <TableCell className="font-mono text-xs">{t.dato}</TableCell>
+                    <TableCell className="font-mono text-xs">{formatDato(t.dato)}</TableCell>
                     <TableCell className="text-sm">{t.beskrivelse_bank}</TableCell>
                     <TableCell className="text-sm">{t.oppgjor_til || '-'}</TableCell>
                     <TableCell className="text-right font-mono">{formatBelop(t.belop)}</TableCell>
