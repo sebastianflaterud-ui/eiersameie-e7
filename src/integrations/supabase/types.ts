@@ -175,6 +175,74 @@ export type Database = {
           },
         ]
       }
+      eier_historikk: {
+        Row: {
+          beskrivelse: string
+          dato: string
+          id: string
+          opprettet: string | null
+          type: string
+          user_id: string
+        }
+        Insert: {
+          beskrivelse: string
+          dato: string
+          id?: string
+          opprettet?: string | null
+          type: string
+          user_id: string
+        }
+        Update: {
+          beskrivelse?: string
+          dato?: string
+          id?: string
+          opprettet?: string | null
+          type?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      eier_historikk_detaljer: {
+        Row: {
+          andel_etter: number
+          andel_for: number
+          eier_navn: string
+          historikk_id: string
+          id: string
+          merknad: string | null
+          opprettet: string | null
+          user_id: string
+        }
+        Insert: {
+          andel_etter: number
+          andel_for: number
+          eier_navn: string
+          historikk_id: string
+          id?: string
+          merknad?: string | null
+          opprettet?: string | null
+          user_id: string
+        }
+        Update: {
+          andel_etter?: number
+          andel_for?: number
+          eier_navn?: string
+          historikk_id?: string
+          id?: string
+          merknad?: string | null
+          opprettet?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "eier_historikk_detaljer_historikk_id_fkey"
+            columns: ["historikk_id"]
+            isOneToOne: false
+            referencedRelation: "eier_historikk"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       eiere: {
         Row: {
           aktiv: boolean | null
@@ -190,6 +258,7 @@ export type Database = {
           notater: string | null
           opprettet: string | null
           orgnr: string | null
+          sist_endret: string | null
           telefon: string | null
           type: string
           user_id: string
@@ -208,6 +277,7 @@ export type Database = {
           notater?: string | null
           opprettet?: string | null
           orgnr?: string | null
+          sist_endret?: string | null
           telefon?: string | null
           type: string
           user_id: string
@@ -226,6 +296,7 @@ export type Database = {
           notater?: string | null
           opprettet?: string | null
           orgnr?: string | null
+          sist_endret?: string | null
           telefon?: string | null
           type?: string
           user_id?: string
