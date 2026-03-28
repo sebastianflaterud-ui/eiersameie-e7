@@ -50,7 +50,7 @@ const utleieItems = [
 
 const ekonomiItems = [
   { title: 'Abonnementer', url: '/abonnementer', icon: CreditCard },
-  { title: 'Skattemeldingsgrunnlag', url: '/skatt', icon: FileText },
+  { title: 'Skattemelding', url: '/skatt', icon: FileText },
 ];
 
 const importItems = [
