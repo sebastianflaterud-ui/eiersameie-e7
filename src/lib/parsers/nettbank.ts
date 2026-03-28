@@ -109,7 +109,7 @@ export function parseNettbankData(text: string, konto?: string): ParsedTransaksj
 
     const datoStr = cols[0].trim();
     const motpart = cols[1].trim();
-    const _kategori = cols[2]?.trim(); // Ignore bank category
+    // cols[2] is the bank category — intentionally ignored
     const belopStr = cols[3]?.trim();
 
     if (!datoStr || !belopStr) continue;
