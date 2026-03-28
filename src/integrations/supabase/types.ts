@@ -83,6 +83,44 @@ export type Database = {
         }
         Relationships: []
       }
+      betalingsmottakere: {
+        Row: {
+          belop: number
+          id: string
+          kontonummer: string | null
+          leieforhold_id: string
+          mottaker_navn: string
+          opprettet: string | null
+          user_id: string
+        }
+        Insert: {
+          belop: number
+          id?: string
+          kontonummer?: string | null
+          leieforhold_id: string
+          mottaker_navn: string
+          opprettet?: string | null
+          user_id: string
+        }
+        Update: {
+          belop?: number
+          id?: string
+          kontonummer?: string | null
+          leieforhold_id?: string
+          mottaker_navn?: string
+          opprettet?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "betalingsmottakere_leieforhold_id_fkey"
+            columns: ["leieforhold_id"]
+            isOneToOne: false
+            referencedRelation: "leieforhold"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       bilag: {
         Row: {
           beskrivelse: string | null
@@ -625,8 +663,10 @@ export type Database = {
           depositum: number | null
           depositumskonto: string | null
           enhet_id: string
+          forfall_dag: number | null
           id: string
           innflytting: string
+          kontrakt_id: string | null
           leiekontrakt_signert: boolean | null
           leietaker_id: string
           notater: string | null
@@ -642,8 +682,10 @@ export type Database = {
           depositum?: number | null
           depositumskonto?: string | null
           enhet_id: string
+          forfall_dag?: number | null
           id?: string
           innflytting: string
+          kontrakt_id?: string | null
           leiekontrakt_signert?: boolean | null
           leietaker_id: string
           notater?: string | null
@@ -659,8 +701,10 @@ export type Database = {
           depositum?: number | null
           depositumskonto?: string | null
           enhet_id?: string
+          forfall_dag?: number | null
           id?: string
           innflytting?: string
+          kontrakt_id?: string | null
           leiekontrakt_signert?: boolean | null
           leietaker_id?: string
           notater?: string | null
@@ -680,6 +724,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "leieforhold_kontrakt_id_fkey"
+            columns: ["kontrakt_id"]
+            isOneToOne: false
+            referencedRelation: "kontrakter"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "leieforhold_leietaker_id_fkey"
             columns: ["leietaker_id"]
             isOneToOne: false
@@ -692,7 +743,9 @@ export type Database = {
         Row: {
           epost: string | null
           fodselsdato: string | null
+          forfall_dag: number | null
           id: string
+          konto_id: string | null
           naavaerende: boolean | null
           navn: string
           notater: string | null
@@ -704,7 +757,9 @@ export type Database = {
         Insert: {
           epost?: string | null
           fodselsdato?: string | null
+          forfall_dag?: number | null
           id?: string
+          konto_id?: string | null
           naavaerende?: boolean | null
           navn: string
           notater?: string | null
@@ -716,7 +771,9 @@ export type Database = {
         Update: {
           epost?: string | null
           fodselsdato?: string | null
+          forfall_dag?: number | null
           id?: string
+          konto_id?: string | null
           naavaerende?: boolean | null
           navn?: string
           notater?: string | null
