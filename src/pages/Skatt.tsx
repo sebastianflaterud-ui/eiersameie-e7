@@ -47,10 +47,12 @@ export default function Skatt() {
       setUklassifisertCount(count || 0);
 
       const realTxs = e7Data.filter(t => !t.er_oppgjor);
+      const manglerUnderlagTxs = realTxs.filter(t => t.retning === 'ut' && t.mangler_underlag);
+      const skattemessigTxs = realTxs.filter(t => !t.mangler_underlag);
       const oppgjor = e7Data.filter(t => t.er_oppgjor);
       setOppgjorTxs(oppgjor);
 
-      const inntekter = realTxs.filter(t => t.retning === 'inn');
+      const inntekter = skattemessigTxs.filter(t => t.retning === 'inn');
       const m: Record<string, Record<string, number>> = {};
       for (const t of inntekter) {
         const tenant = t.leie_for || t.motpart_egen || t.motpart_bank || 'Ukjent';
@@ -61,12 +63,14 @@ export default function Skatt() {
       setLeieMatrix(m);
 
       const brutto = inntekter.reduce((s, t) => s + Number(t.belop), 0);
-      const fradrag = realTxs.filter(t => t.retning === 'ut' && t.fradragsberettiget);
+      const fradrag = skattemessigTxs.filter(t => t.retning === 'ut' && t.fradragsberettiget);
       setFradragKostnader(fradrag);
       const fradragSum = fradrag.reduce((s, t) => s + Number(t.belop), 0);
-      const ikke = realTxs.filter(t => t.retning === 'ut' && !t.fradragsberettiget);
+      const ikke = skattemessigTxs.filter(t => t.retning === 'ut' && !t.fradragsberettiget);
       setIkkeFradrag(ikke);
       setTotals({ brutto, fradrag: fradragSum, netto: brutto - fradragSum });
+      // Store mangler_underlag info for display
+      (window as any).__manglerUnderlag = manglerUnderlagTxs;
 
       const txIds = e7Data.map(t => t.id);
       if (txIds.length > 0) {
