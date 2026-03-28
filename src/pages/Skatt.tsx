@@ -116,7 +116,7 @@ export default function Skatt() {
   const exportCsv = () => {
     const label = isPerEier ? selectedEier : 'Alle (brutto)';
     const rows = [
-      [`Skattemeldingsgrunnlag ${year} — ${label}`], [],
+      [`Skattemelding ${year} — ${label}`], [],
       ['Brutto leieinntekter E7', String(totals.brutto)],
       ...(isPerEier && currentEier ? [
         [`Inntektsandel ${formatPct(currentEier.inntektsandel_prosent)}`, String(Math.round(totals.brutto * inntektsAndel))],
@@ -132,13 +132,13 @@ export default function Skatt() {
     const csv = rows.map(r => r.join(';')).join('\n');
     const blob = new Blob([csv], { type: 'text/csv' });
     const url = URL.createObjectURL(blob);
-    const a = document.createElement('a'); a.href = url; a.download = `skattemeldingsgrunnlag_${year}_${selectedEier}.csv`; a.click();
+    const a = document.createElement('a'); a.href = url; a.download = `skattemelding_${year}_${selectedEier}.csv`; a.click();
   };
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Skattemeldingsgrunnlag</h1>
+        <h1 className="text-2xl font-bold">Skattemelding</h1>
         <div className="flex gap-2">
           <Select value={selectedEier} onValueChange={setSelectedEier}>
             <SelectTrigger className="w-[220px]"><SelectValue placeholder="Vis for eier" /></SelectTrigger>
@@ -183,7 +183,7 @@ export default function Skatt() {
       {manglerUnderlagStats.antall > 0 && (
         <div className="flex items-center gap-2 p-4 bg-gray-50 border border-gray-200 rounded-lg">
           <AlertTriangle className="h-5 w-5 text-gray-500" />
-          <span className="text-gray-700">{manglerUnderlagStats.antall} kostnader ({formatBelop(manglerUnderlagStats.sum)}) mangler underlag og er ekskludert fra skattemeldingsgrunnlaget.</span>
+          <span className="text-gray-700">{manglerUnderlagStats.antall} kostnader ({formatBelop(manglerUnderlagStats.sum)}) mangler underlag og er ekskludert fra skattemeldingen.</span>
         </div>
       )}
 
