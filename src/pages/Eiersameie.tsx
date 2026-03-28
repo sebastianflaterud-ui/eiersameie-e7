@@ -122,7 +122,25 @@ export default function Eiersameie() {
         </CardContent></Card>
       </div>
 
-      {mvData.length > 0 && (
+      {stats.manglerUnderlagAntall > 0 && (
+        <div className="p-4 bg-gray-50 border border-gray-200 rounded-lg space-y-2">
+          <div className="flex items-center gap-2">
+            <AlertTriangle className="h-5 w-5 text-gray-500" />
+            <span className="text-sm font-medium text-gray-700">{stats.manglerUnderlagAntall} kostnader ({formatBelop(stats.manglerUnderlagSum)}) mangler underlag</span>
+          </div>
+          <div className="grid grid-cols-2 gap-4 text-sm">
+            <div>
+              <span className="text-muted-foreground">Totale kostnader (inkl. uten underlag):</span>
+              <span className="ml-2 font-mono font-medium">{formatBelop(isPerEier ? Math.round(stats.total * kAndel) : stats.total)}</span>
+            </div>
+            <div>
+              <span className="text-muted-foreground">Kostnader med underlag (skattemessig):</span>
+              <span className="ml-2 font-mono font-medium">{formatBelop(isPerEier ? Math.round((stats.total - stats.manglerUnderlagSum) * kAndel) : stats.total - stats.manglerUnderlagSum)}</span>
+            </div>
+          </div>
+        </div>
+      )}
+
         <div className="flex items-center gap-2 p-3 bg-blue-50 border border-blue-200 rounded-lg cursor-pointer" onClick={() => navigate('/mellomvaerende')}>
           <Handshake className="h-4 w-4 text-blue-600" />
           <span className="text-sm text-blue-800">
