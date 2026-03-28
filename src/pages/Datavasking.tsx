@@ -270,9 +270,13 @@ export default function Datavasking() {
             <SelectItem value="auto">Kun autoklassifiserte</SelectItem>
           </SelectContent>
         </Select>
-        <Button variant="outline" onClick={aiClassify} disabled={aiClassifying}>
+        <Button variant="outline" onClick={() => aiClassify(false)} disabled={aiClassifying}>
           {aiClassifying ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Sparkles className="h-4 w-4 mr-1" />}
-          {aiClassifying ? 'Klassifiserer...' : 'AI-klassifiser'}
+          {aiClassifying ? `${aiProgress.done}/${aiProgress.total}` : 'AI-klassifiser side'}
+        </Button>
+        <Button variant="outline" onClick={() => aiClassify(true)} disabled={aiClassifying}>
+          <Sparkles className="h-4 w-4 mr-1" />
+          AI-klassifiser alle
         </Button>
         {selected.size > 0 && (
           <div className="flex gap-1 ml-4">
