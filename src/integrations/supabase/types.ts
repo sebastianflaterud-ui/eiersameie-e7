@@ -1257,6 +1257,7 @@ export type Database = {
           leie_for: string | null
           leieperiode: string | null
           leverandor: string | null
+          mangler_underlag: boolean
           motpart_bank: string | null
           motpart_egen: string | null
           notater: string | null
@@ -1297,6 +1298,7 @@ export type Database = {
           leie_for?: string | null
           leieperiode?: string | null
           leverandor?: string | null
+          mangler_underlag?: boolean
           motpart_bank?: string | null
           motpart_egen?: string | null
           notater?: string | null
@@ -1337,6 +1339,7 @@ export type Database = {
           leie_for?: string | null
           leieperiode?: string | null
           leverandor?: string | null
+          mangler_underlag?: boolean
           motpart_bank?: string | null
           motpart_egen?: string | null
           notater?: string | null

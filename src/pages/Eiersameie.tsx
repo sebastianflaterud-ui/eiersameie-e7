@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { formatBelop, formatDato } from '@/lib/format';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { useNavigate } from 'react-router-dom';
-import { Handshake } from 'lucide-react';
+import { Handshake, AlertTriangle } from 'lucide-react';
 
 interface Eier { id: string; navn: string; inntektsandel_prosent: number; kostnadsandel_prosent: number; aktiv: boolean | null; }
 
@@ -18,7 +18,7 @@ export default function Eiersameie() {
   const [txs, setTxs] = useState<any[]>([]);
   const [eiere, setEiere] = useState<Eier[]>([]);
   const [selectedEier, setSelectedEier] = useState<string>('alle');
-  const [stats, setStats] = useState({ total: 0, fradrag: 0, ikkeFradrag: 0, inntekter: 0 });
+  const [stats, setStats] = useState({ total: 0, fradrag: 0, ikkeFradrag: 0, inntekter: 0, manglerUnderlagAntall: 0, manglerUnderlagSum: 0 });
   const [chartData, setChartData] = useState<{ name: string; belop: number }[]>([]);
   const [kostnadTyper, setKostnadTyper] = useState<{ type: string; underkategori: string; antall: number; sum: number }[]>([]);
   const [mvData, setMvData] = useState<any[]>([]);
@@ -43,9 +43,11 @@ export default function Eiersameie() {
 
       const utgifter = realTxs.filter(t => t.retning === 'ut');
       const inntekter = realTxs.filter(t => t.retning === 'inn');
+      const manglerUnderlag = utgifter.filter(t => t.mangler_underlag);
+      const manglerSum = manglerUnderlag.reduce((s, t) => s + Number(t.belop), 0);
       const fradrag = utgifter.filter(t => t.fradragsberettiget).reduce((s, t) => s + Number(t.belop), 0);
       const total = utgifter.reduce((s, t) => s + Number(t.belop), 0);
-      setStats({ total, fradrag, ikkeFradrag: total - fradrag, inntekter: inntekter.reduce((s, t) => s + Number(t.belop), 0) });
+      setStats({ total, fradrag, ikkeFradrag: total - fradrag, inntekter: inntekter.reduce((s, t) => s + Number(t.belop), 0), manglerUnderlagAntall: manglerUnderlag.length, manglerUnderlagSum: manglerSum });
 
       const byUk: Record<string, number> = {};
       for (const t of utgifter) { const uk = t.underkategori || 'Annet'; byUk[uk] = (byUk[uk] || 0) + Number(t.belop); }
@@ -119,6 +121,25 @@ export default function Eiersameie() {
           <div className="text-sm text-muted-foreground">{isPerEier ? `Leieinntekter (din andel ${formatPct(currentEier!.inntektsandel_prosent)})` : 'Leieinntekter'}</div>
         </CardContent></Card>
       </div>
+
+      {stats.manglerUnderlagAntall > 0 && (
+        <div className="p-4 bg-gray-50 border border-gray-200 rounded-lg space-y-2">
+          <div className="flex items-center gap-2">
+            <AlertTriangle className="h-5 w-5 text-gray-500" />
+            <span className="text-sm font-medium text-gray-700">{stats.manglerUnderlagAntall} kostnader ({formatBelop(stats.manglerUnderlagSum)}) mangler underlag</span>
+          </div>
+          <div className="grid grid-cols-2 gap-4 text-sm">
+            <div>
+              <span className="text-muted-foreground">Totale kostnader (inkl. uten underlag):</span>
+              <span className="ml-2 font-mono font-medium">{formatBelop(isPerEier ? Math.round(stats.total * kAndel) : stats.total)}</span>
+            </div>
+            <div>
+              <span className="text-muted-foreground">Kostnader med underlag (skattemessig):</span>
+              <span className="ml-2 font-mono font-medium">{formatBelop(isPerEier ? Math.round((stats.total - stats.manglerUnderlagSum) * kAndel) : stats.total - stats.manglerUnderlagSum)}</span>
+            </div>
+          </div>
+        </div>
+      )}
 
       {mvData.length > 0 && (
         <div className="flex items-center gap-2 p-3 bg-blue-50 border border-blue-200 rounded-lg cursor-pointer" onClick={() => navigate('/mellomvaerende')}>
@@ -276,7 +297,12 @@ export default function Eiersameie() {
                         </Badge>
                       )}
                     </TableCell>
-                    <TableCell>{t.er_oppgjor && <Badge className="bg-gray-200 text-gray-700">Oppgjør</Badge>}</TableCell>
+                    <TableCell>
+                      <div className="flex gap-1">
+                        {t.er_oppgjor && <Badge className="bg-gray-200 text-gray-700">Oppgjør</Badge>}
+                        {t.mangler_underlag && <Badge variant="secondary" className="text-xs bg-gray-200 text-gray-600">Mangler underlag</Badge>}
+                      </div>
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>

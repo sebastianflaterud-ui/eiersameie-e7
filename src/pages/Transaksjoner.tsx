@@ -201,7 +201,12 @@ export default function Transaksjoner() {
                 <TableCell className={`text-right font-mono text-sm whitespace-nowrap ${t.er_oppgjor ? 'text-gray-500' : t.retning === 'inn' ? 'text-green-600' : 'text-red-600'}`}>
                   {t.retning === 'ut' ? '-' : ''}{formatBelop(t.belop)}
                 </TableCell>
-                <TableCell><Badge variant="outline" className="text-xs">{t.kategori}</Badge></TableCell>
+                <TableCell>
+                  <div className="flex gap-1">
+                    <Badge variant="outline" className="text-xs">{t.kategori}</Badge>
+                    {(t as any).mangler_underlag && <Badge variant="secondary" className="text-xs bg-gray-200 text-gray-600">Mangler underlag</Badge>}
+                  </div>
+                </TableCell>
                 {showOppgjor && <TableCell>{t.er_oppgjor && <Badge className="bg-gray-200 text-gray-700 hover:bg-gray-200">Oppgjør</Badge>}</TableCell>}
                 {showFradrag && <TableCell>{t.retning === 'ut' && <Badge className={t.fradragsberettiget ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-500'}>{t.fradragsberettiget ? 'Ja' : 'Nei'}</Badge>}</TableCell>}
                 {showBilag && <TableCell>{bilagMap.has(t.id) && <Paperclip className="h-4 w-4 text-blue-500" />}</TableCell>}

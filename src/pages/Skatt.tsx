@@ -27,6 +27,7 @@ export default function Skatt() {
   const [uklassifisertCount, setUklassifisertCount] = useState(0);
   const [totals, setTotals] = useState({ brutto: 0, fradrag: 0, netto: 0 });
   const [bilagStats, setBilagStats] = useState({ med: 0, uten: 0 });
+  const [manglerUnderlagStats, setManglerUnderlagStats] = useState({ antall: 0, sum: 0 });
   const [mvData, setMvData] = useState<any[]>([]);
   const [mvBevegelser, setMvBevegelser] = useState<any[]>([]);
 
@@ -47,10 +48,12 @@ export default function Skatt() {
       setUklassifisertCount(count || 0);
 
       const realTxs = e7Data.filter(t => !t.er_oppgjor);
+      const manglerUnderlagTxs = realTxs.filter(t => t.retning === 'ut' && t.mangler_underlag);
+      const skattemessigTxs = realTxs.filter(t => !t.mangler_underlag);
       const oppgjor = e7Data.filter(t => t.er_oppgjor);
       setOppgjorTxs(oppgjor);
 
-      const inntekter = realTxs.filter(t => t.retning === 'inn');
+      const inntekter = skattemessigTxs.filter(t => t.retning === 'inn');
       const m: Record<string, Record<string, number>> = {};
       for (const t of inntekter) {
         const tenant = t.leie_for || t.motpart_egen || t.motpart_bank || 'Ukjent';
@@ -61,12 +64,16 @@ export default function Skatt() {
       setLeieMatrix(m);
 
       const brutto = inntekter.reduce((s, t) => s + Number(t.belop), 0);
-      const fradrag = realTxs.filter(t => t.retning === 'ut' && t.fradragsberettiget);
+      const fradrag = skattemessigTxs.filter(t => t.retning === 'ut' && t.fradragsberettiget);
       setFradragKostnader(fradrag);
       const fradragSum = fradrag.reduce((s, t) => s + Number(t.belop), 0);
-      const ikke = realTxs.filter(t => t.retning === 'ut' && !t.fradragsberettiget);
+      const ikke = skattemessigTxs.filter(t => t.retning === 'ut' && !t.fradragsberettiget);
       setIkkeFradrag(ikke);
       setTotals({ brutto, fradrag: fradragSum, netto: brutto - fradragSum });
+      setManglerUnderlagStats({
+        antall: manglerUnderlagTxs.length,
+        sum: manglerUnderlagTxs.reduce((s, t) => s + Number(t.belop), 0),
+      });
 
       const txIds = e7Data.map(t => t.id);
       if (txIds.length > 0) {
@@ -173,7 +180,13 @@ export default function Skatt() {
         </div>
       )}
 
-      {/* Levi special case: no income */}
+      {manglerUnderlagStats.antall > 0 && (
+        <div className="flex items-center gap-2 p-4 bg-gray-50 border border-gray-200 rounded-lg">
+          <AlertTriangle className="h-5 w-5 text-gray-500" />
+          <span className="text-gray-700">{manglerUnderlagStats.antall} kostnader ({formatBelop(manglerUnderlagStats.sum)}) mangler underlag og er ekskludert fra skattemeldingsgrunnlaget.</span>
+        </div>
+      )}
+
       {isLevi && currentEier && (
         <Card>
           <CardContent className="pt-6">
