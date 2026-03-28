@@ -90,6 +90,7 @@ export type Database = {
           filstorrelse: number | null
           filtype: string
           id: string
+          kontrakt_id: string | null
           opprettet: string | null
           storage_path: string
           transaksjon_id: string | null
@@ -101,6 +102,7 @@ export type Database = {
           filstorrelse?: number | null
           filtype: string
           id?: string
+          kontrakt_id?: string | null
           opprettet?: string | null
           storage_path: string
           transaksjon_id?: string | null
@@ -112,12 +114,20 @@ export type Database = {
           filstorrelse?: number | null
           filtype?: string
           id?: string
+          kontrakt_id?: string | null
           opprettet?: string | null
           storage_path?: string
           transaksjon_id?: string | null
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "bilag_kontrakt_id_fkey"
+            columns: ["kontrakt_id"]
+            isOneToOne: false
+            referencedRelation: "kontrakter"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "bilag_transaksjon_id_fkey"
             columns: ["transaksjon_id"]
@@ -189,12 +199,16 @@ export type Database = {
           aktiv: boolean | null
           areal_kvm: number | null
           beskrivelse: string | null
+          boenhet: string | null
+          disponert_av: string | null
           etasje: string | null
           fasiliteter: string | null
           id: string
           maanedsleie_standard: number | null
+          markedsleie_estimat: number | null
           navn: string
           opprettet: string | null
+          skattemessig_type: string | null
           status: string
           type: string
           user_id: string
@@ -203,12 +217,16 @@ export type Database = {
           aktiv?: boolean | null
           areal_kvm?: number | null
           beskrivelse?: string | null
+          boenhet?: string | null
+          disponert_av?: string | null
           etasje?: string | null
           fasiliteter?: string | null
           id?: string
           maanedsleie_standard?: number | null
+          markedsleie_estimat?: number | null
           navn: string
           opprettet?: string | null
+          skattemessig_type?: string | null
           status?: string
           type: string
           user_id: string
@@ -217,12 +235,16 @@ export type Database = {
           aktiv?: boolean | null
           areal_kvm?: number | null
           beskrivelse?: string | null
+          boenhet?: string | null
+          disponert_av?: string | null
           etasje?: string | null
           fasiliteter?: string | null
           id?: string
           maanedsleie_standard?: number | null
+          markedsleie_estimat?: number | null
           navn?: string
           opprettet?: string | null
+          skattemessig_type?: string | null
           status?: string
           type?: string
           user_id?: string
@@ -380,6 +402,219 @@ export type Database = {
           kontonummer?: string
           navn?: string | null
           type?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      kontrakt_hendelser: {
+        Row: {
+          beskrivelse: string | null
+          dato: string
+          hendelse_type: string
+          id: string
+          kontrakt_id: string
+          leietaker_id: string | null
+          opprettet: string | null
+          user_id: string
+        }
+        Insert: {
+          beskrivelse?: string | null
+          dato: string
+          hendelse_type: string
+          id?: string
+          kontrakt_id: string
+          leietaker_id?: string | null
+          opprettet?: string | null
+          user_id: string
+        }
+        Update: {
+          beskrivelse?: string | null
+          dato?: string
+          hendelse_type?: string
+          id?: string
+          kontrakt_id?: string
+          leietaker_id?: string | null
+          opprettet?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "kontrakt_hendelser_kontrakt_id_fkey"
+            columns: ["kontrakt_id"]
+            isOneToOne: false
+            referencedRelation: "kontrakter"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "kontrakt_hendelser_leietaker_id_fkey"
+            columns: ["leietaker_id"]
+            isOneToOne: false
+            referencedRelation: "leietakere"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      kontrakt_leietakere: {
+        Row: {
+          aktiv: boolean | null
+          depositum: number
+          enhet_id: string
+          id: string
+          innflytting: string
+          kontrakt_id: string
+          leietaker_id: string
+          maanedsleie: number
+          opprettet: string | null
+          user_id: string
+          utflytting: string | null
+        }
+        Insert: {
+          aktiv?: boolean | null
+          depositum: number
+          enhet_id: string
+          id?: string
+          innflytting: string
+          kontrakt_id: string
+          leietaker_id: string
+          maanedsleie: number
+          opprettet?: string | null
+          user_id: string
+          utflytting?: string | null
+        }
+        Update: {
+          aktiv?: boolean | null
+          depositum?: number
+          enhet_id?: string
+          id?: string
+          innflytting?: string
+          kontrakt_id?: string
+          leietaker_id?: string
+          maanedsleie?: number
+          opprettet?: string | null
+          user_id?: string
+          utflytting?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "kontrakt_leietakere_enhet_id_fkey"
+            columns: ["enhet_id"]
+            isOneToOne: false
+            referencedRelation: "enheter"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "kontrakt_leietakere_kontrakt_id_fkey"
+            columns: ["kontrakt_id"]
+            isOneToOne: false
+            referencedRelation: "kontrakter"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "kontrakt_leietakere_leietaker_id_fkey"
+            columns: ["leietaker_id"]
+            isOneToOne: false
+            referencedRelation: "leietakere"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      kontrakt_versjoner: {
+        Row: {
+          endring_beskrivelse: string | null
+          generert_dato: string | null
+          id: string
+          kontrakt_id: string
+          storage_path: string
+          user_id: string
+          versjon: number
+        }
+        Insert: {
+          endring_beskrivelse?: string | null
+          generert_dato?: string | null
+          id?: string
+          kontrakt_id: string
+          storage_path: string
+          user_id: string
+          versjon: number
+        }
+        Update: {
+          endring_beskrivelse?: string | null
+          generert_dato?: string | null
+          id?: string
+          kontrakt_id?: string
+          storage_path?: string
+          user_id?: string
+          versjon?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "kontrakt_versjoner_kontrakt_id_fkey"
+            columns: ["kontrakt_id"]
+            isOneToOne: false
+            referencedRelation: "kontrakter"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      kontrakter: {
+        Row: {
+          betalingskonto: string | null
+          boenhet: string
+          depositum_multiplier: number | null
+          id: string
+          ikke_inkludert: string | null
+          inkludert_i_leie: string | null
+          kontrakt_status: string
+          navn: string
+          notater: string | null
+          oppdatert: string | null
+          opprettet: string | null
+          oppsigelsestid_mnd: number | null
+          ordensregler: string | null
+          saerlige_bestemmelser: string | null
+          sluttdato: string | null
+          startdato: string
+          type: string
+          user_id: string
+        }
+        Insert: {
+          betalingskonto?: string | null
+          boenhet: string
+          depositum_multiplier?: number | null
+          id?: string
+          ikke_inkludert?: string | null
+          inkludert_i_leie?: string | null
+          kontrakt_status?: string
+          navn: string
+          notater?: string | null
+          oppdatert?: string | null
+          opprettet?: string | null
+          oppsigelsestid_mnd?: number | null
+          ordensregler?: string | null
+          saerlige_bestemmelser?: string | null
+          sluttdato?: string | null
+          startdato: string
+          type?: string
+          user_id: string
+        }
+        Update: {
+          betalingskonto?: string | null
+          boenhet?: string
+          depositum_multiplier?: number | null
+          id?: string
+          ikke_inkludert?: string | null
+          inkludert_i_leie?: string | null
+          kontrakt_status?: string
+          navn?: string
+          notater?: string | null
+          oppdatert?: string | null
+          opprettet?: string | null
+          oppsigelsestid_mnd?: number | null
+          ordensregler?: string | null
+          saerlige_bestemmelser?: string | null
+          sluttdato?: string | null
+          startdato?: string
+          type?: string
           user_id?: string
         }
         Relationships: []

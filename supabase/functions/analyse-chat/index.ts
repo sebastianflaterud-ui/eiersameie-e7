@@ -64,7 +64,14 @@ Kontekst:
 - Eier: Sebastian Flåterud. Eiendom: Enerhøgdveien 7A, Nesodden.
 - Selskap: Motivus AS. Kjærestens selskap: Multis EHF.
 
-Eiersameie E7 — eiere og skattemessig behandling:
+Skattemessig struktur E7:
+- E7 er tomannsbolig med 2 boenheter. Ikke flermannsbolig. Under næringsgrensen.
+- All leieinntekt er skattepliktig som kapitalinntekt (22% av netto). 50%-regelen er ikke oppfylt.
+- Boenhet 1: Hovedhuset. Bofellesskap med felles kontrakt. 6 soverom totalt. Rom 1-4 og Hybel 2 utleid. Rom 5 (Sebastian) og Rom 6 (David) eiernes egne rom.
+- Boenhet 2: Bileiligheten (Hybel 1). Selvstendig enhet. Egen kontrakt. 18.000 kr/mnd.
+- Felles kontrakt for bofellesskapet = 1 boenhet. Individuell kontrakt for bileiligheten = 1 boenhet. Totalt 2.
+- 3 utleiere: Sebastian, David og Motivus AS. Levi er ikke utleier (0% inntektsandel).
+- Kontraktsdata finnes i kontrakter, kontrakt_leietakere og kontrakt_hendelser tabellene.
 
 Eiere med andeler:
 - Sebastian Flåterud (42,63% eierandel, 46,70% inntektsandel, 42,63% kostnadsandel)
@@ -77,31 +84,19 @@ Sebastians inntektsandel er 46,70% fordi Levi har overført sin inntektsrett (4,
 VIKTIG skattemessig prinsipp:
 - Alle leieinntekter går via Sebastians bankkonto. Han viderefordeler til medeiere.
 - Akkurat nå tilbakeholder Sebastian andelen til David og Motivus AS som nedbetaling av lån.
-- MEN skattemessig er Davids andel (32,70%) fortsatt DAVIDS skattepliktige inntekt. At pengene tilbakeholdes som gjeldsnedbetaling endrer ikke hvem inntekten tilhører skattemessig.
-- Samme for Motivus AS: 20,60% er selskapets inntekt i regnskapet, uansett om pengene tilbakeholdes.
-- Mellomværende-modulen sporer lånene. Skattemeldingsgrunnlaget viser korrekt skattepliktig inntekt per eier.
+- MEN skattemessig er Davids andel (32,70%) fortsatt DAVIDS skattepliktige inntekt.
+- Samme for Motivus AS: 20,60% er selskapets inntekt i regnskapet.
 - Utleie av bolig er alltid unntatt MVA, også for Motivus AS.
-- Når bruker spør om "min" inntekt eller "min skattemelding", bruk Sebastian Flåteruds andeler.
-- Når bruker spør om en annen eiers inntekt, bruk den eierens andeler.
+- Når bruker spør om "min" inntekt, bruk Sebastian Flåteruds andeler.
 
-Tilleggskontekst mellomværende:
+Mellomværende:
 - Sebastian har to aktive lån der han er kreditor:
-  1. Motivus AS skylder Sebastian for utlegg ved investering i E7. Nedbetales ved at Sebastian beholder Motivus sin leieandel.
-  2. David Lange-Nielsen skylder Sebastian for kjøp av økt eierandel. Nedbetales ved at Sebastian beholder Davids leieandel.
-- Begge lånene nedbetales automatisk gjennom tilbakeholdte leieinntekter.
-- Når et lån er innfridd begynner debitor å motta sin leieandel.
-- Data finnes i mellomvaerende og mellomvaerende_bevegelser tabellene.
-- Typiske spørsmål: "Hvor mye skylder David meg?", "Når er Motivus-lånet nedbetalt?", "Vis nedbetalingshistorikk for David", "Hva er total utestående?"
+  1. Motivus AS skylder Sebastian for utlegg ved investering i E7.
+  2. David Lange-Nielsen skylder Sebastian for kjøp av økt eierandel.
+- Begge nedbetales gjennom tilbakeholdte leieinntekter.
 
-Tilleggskontekst enheter og leietakere:
-- E7 har seks utleieenheter: Hybel 1, Hybel 2, Rom 1, Rom 2, Rom 3, Rom 4.
-- Boligen omtales som enebolig med 2 hybler.
-- Leietakere flytter inn og ut jevnlig. Belegg varierer per måned.
-- Data om enheter, leietakere og leieforhold finnes i enheter, leietakere og leieforhold tabellene.
-- Typiske spørsmål: "Hvem bor i Hybel 1?", "Vis belegg siste 6 måneder", "Hvilke enheter er ledige?", "Hva er forventet inntekt neste måned?", "Vis betalingshistorikk for Camilla", "Hvor lenge har Morten bodd her?"
-
-For skattemeldingen: hver eier rapporterer kun sin andel. Netto = (brutto inntekt × inntektsandel) minus (brutto fradrag × kostnadsandel).
-Kun "Drift og vedlikehold" er fradragsberettiget. "Påkost" legges til inngangsverdi (ikke fradrag).
+For skattemeldingen: netto = (brutto inntekt × inntektsandel) minus (brutto fradrag × kostnadsandel).
+Kun "Drift og vedlikehold" er fradragsberettiget. "Påkost" legges til inngangsverdi.
 
 ${txSummary}${abSummary}${eiereSummary}${mvSummary}${mvBevSummary}${enheterSummary}${leietakereSummary}${leieforholdSummary}`;
 

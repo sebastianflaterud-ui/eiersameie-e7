@@ -12,12 +12,14 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { formatBelop, formatDato } from '@/lib/format';
 import { toast } from 'sonner';
-import { Plus, DoorOpen, Edit, ArrowLeft } from 'lucide-react';
+import { Plus, Edit, ArrowLeft, Info } from 'lucide-react';
 
 interface Enhet {
   id: string; navn: string; type: string; beskrivelse: string | null;
   maanedsleie_standard: number | null; areal_kvm: number | null; etasje: string | null;
   fasiliteter: string | null; status: string; aktiv: boolean | null;
+  boenhet: string | null; skattemessig_type: string | null;
+  markedsleie_estimat: number | null; disponert_av: string | null;
 }
 
 interface Leieforhold {
@@ -69,17 +71,25 @@ export default function Enheter() {
   const getLeietaker = (id: string) => leietakere.find(l => l.id === id);
   const getHistorikk = (enhetId: string) => leieforhold.filter(l => l.enhet_id === enhetId);
 
-  const utleid = enheter.filter(e => e.status === 'utleid').length;
-  const ledig = enheter.filter(e => e.status === 'ledig').length;
-  const belegg = enheter.length > 0 ? (utleid / enheter.length) * 100 : 0;
+  const utleieEnheter = enheter.filter(e => !e.disponert_av);
+  const utleid = utleieEnheter.filter(e => e.status === 'utleid').length;
+  const ledigCount = utleieEnheter.filter(e => e.status === 'ledig').length;
+  const belegg = utleieEnheter.length > 0 ? (utleid / utleieEnheter.length) * 100 : 0;
+
+  // Group by boenhet
+  const boenheter = [...new Set(enheter.map(e => e.boenhet).filter(Boolean))] as string[];
 
   const saveNew = async () => {
     if (!user || !form.navn) return;
     const { error } = await supabase.from('enheter').insert({
       user_id: user.id, navn: form.navn, type: form.type || 'rom',
-      beskrivelse: form.beskrivelse || null, maanedsleie_standard: form.maanedsleie_standard ? Number(form.maanedsleie_standard) : null,
+      beskrivelse: form.beskrivelse || null,
+      maanedsleie_standard: form.maanedsleie_standard ? Number(form.maanedsleie_standard) : null,
       areal_kvm: form.areal_kvm ? Number(form.areal_kvm) : null, etasje: form.etasje || null,
       fasiliteter: form.fasiliteter || null, status: form.status || 'ledig',
+      boenhet: form.boenhet || null, skattemessig_type: form.skattemessig_type || null,
+      markedsleie_estimat: form.markedsleie_estimat ? Number(form.markedsleie_estimat) : null,
+      disponert_av: form.disponert_av || null,
     });
     if (error) { toast.error('Feil: ' + error.message); return; }
     toast.success('Enhet opprettet');
@@ -93,6 +103,9 @@ export default function Enheter() {
       maanedsleie_standard: form.maanedsleie_standard ? Number(form.maanedsleie_standard) : null,
       areal_kvm: form.areal_kvm ? Number(form.areal_kvm) : null, etasje: form.etasje || null,
       fasiliteter: form.fasiliteter || null, status: form.status,
+      boenhet: form.boenhet || null, skattemessig_type: form.skattemessig_type || null,
+      markedsleie_estimat: form.markedsleie_estimat ? Number(form.markedsleie_estimat) : null,
+      disponert_av: form.disponert_av || null,
     }).eq('id', selected.id);
     if (error) { toast.error('Feil: ' + error.message); return; }
     toast.success('Enhet oppdatert');
@@ -111,16 +124,18 @@ export default function Enheter() {
           <h1 className="text-2xl font-bold">{selected.navn}</h1>
           {typeBadge(selected.type)}
           {statusBadge(selected.status)}
+          {selected.disponert_av && <Badge className="bg-blue-100 text-blue-800 border-blue-200">Eier</Badge>}
           <Button variant="outline" size="sm" className="ml-auto" onClick={() => { setForm(selected); setEditing(true); }}>
             <Edit className="h-4 w-4 mr-1" /> Rediger
           </Button>
         </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <Card><CardContent className="pt-4"><div className="text-sm text-muted-foreground">Standard månedsleie</div><div className="text-xl font-bold">{selected.maanedsleie_standard ? formatBelop(selected.maanedsleie_standard) : '-'}</div></CardContent></Card>
-          <Card><CardContent className="pt-4"><div className="text-sm text-muted-foreground">Areal</div><div className="text-xl font-bold">{selected.areal_kvm ? `${selected.areal_kvm} m²` : '-'}</div></CardContent></Card>
-          <Card><CardContent className="pt-4"><div className="text-sm text-muted-foreground">Etasje</div><div className="text-xl font-bold">{selected.etasje || '-'}</div></CardContent></Card>
-          <Card><CardContent className="pt-4"><div className="text-sm text-muted-foreground">Status</div><div className="text-xl">{statusBadge(selected.status)}</div></CardContent></Card>
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+          <Card><CardContent className="pt-4"><div className="text-sm text-muted-foreground">Boenhet</div><div className="text-lg font-bold">{selected.boenhet || '-'}</div></CardContent></Card>
+          <Card><CardContent className="pt-4"><div className="text-sm text-muted-foreground">Markedsleie</div><div className="text-lg font-bold">{selected.markedsleie_estimat ? formatBelop(selected.markedsleie_estimat) : '-'}</div></CardContent></Card>
+          <Card><CardContent className="pt-4"><div className="text-sm text-muted-foreground">Areal</div><div className="text-lg font-bold">{selected.areal_kvm ? `${selected.areal_kvm} m²` : '-'}</div></CardContent></Card>
+          <Card><CardContent className="pt-4"><div className="text-sm text-muted-foreground">Etasje</div><div className="text-lg font-bold">{selected.etasje || '-'}</div></CardContent></Card>
+          <Card><CardContent className="pt-4"><div className="text-sm text-muted-foreground">Disponert av</div><div className="text-lg font-bold">{selected.disponert_av || 'Utleie'}</div></CardContent></Card>
         </div>
 
         {selected.beskrivelse && <Card><CardContent className="pt-4"><p className="text-sm text-muted-foreground">{selected.beskrivelse}</p></CardContent></Card>}
@@ -135,7 +150,6 @@ export default function Enheter() {
                 <div><span className="text-muted-foreground">Avtalt leie:</span> <span className="font-medium">{formatBelop(aktivt.avtalt_leie)}</span></div>
                 <div><span className="text-muted-foreground">Depositum:</span> <span className="font-medium">{aktivt.depositum ? formatBelop(aktivt.depositum) : '-'}</span></div>
               </div>
-              {aktivt.leiekontrakt_signert ? <Badge variant="default">Kontrakt signert</Badge> : <Badge variant="destructive">Kontrakt ikke signert</Badge>}
             </CardContent>
           </Card>
         )}
@@ -147,12 +161,8 @@ export default function Enheter() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Leietaker</TableHead>
-                    <TableHead>Innflytting</TableHead>
-                    <TableHead>Utflytting</TableHead>
-                    <TableHead>Varighet</TableHead>
-                    <TableHead className="text-right">Avtalt leie</TableHead>
-                    <TableHead>Status</TableHead>
+                    <TableHead>Leietaker</TableHead><TableHead>Innflytting</TableHead><TableHead>Utflytting</TableHead>
+                    <TableHead>Varighet</TableHead><TableHead className="text-right">Avtalt leie</TableHead><TableHead>Status</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -183,41 +193,46 @@ export default function Enheter() {
 
   const enhetForm = (onSave: () => void, title: string) => (
     <Dialog open onOpenChange={() => { setShowNew(false); setEditing(false); setForm({}); }}>
-      <DialogContent>
+      <DialogContent className="max-w-lg">
         <DialogHeader><DialogTitle>{title}</DialogTitle></DialogHeader>
-        <div className="space-y-3">
+        <div className="space-y-3 max-h-[60vh] overflow-y-auto">
           <div><Label>Navn</Label><Input value={form.navn || ''} onChange={e => setForm(f => ({ ...f, navn: e.target.value }))} /></div>
-          <div><Label>Type</Label>
-            <Select value={form.type || 'rom'} onValueChange={v => setForm(f => ({ ...f, type: v }))}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="hybel">Hybel</SelectItem>
-                <SelectItem value="rom">Rom</SelectItem>
-                <SelectItem value="leilighet">Leilighet</SelectItem>
-                <SelectItem value="annet">Annet</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <div><Label>Beskrivelse</Label><Textarea value={form.beskrivelse || ''} onChange={e => setForm(f => ({ ...f, beskrivelse: e.target.value }))} /></div>
           <div className="grid grid-cols-2 gap-3">
-            <div><Label>Standard månedsleie</Label><Input type="number" value={form.maanedsleie_standard || ''} onChange={e => setForm(f => ({ ...f, maanedsleie_standard: e.target.value }))} /></div>
-            <div><Label>Areal (m²)</Label><Input type="number" value={form.areal_kvm || ''} onChange={e => setForm(f => ({ ...f, areal_kvm: e.target.value }))} /></div>
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div><Label>Etasje</Label><Input value={form.etasje || ''} onChange={e => setForm(f => ({ ...f, etasje: e.target.value }))} /></div>
+            <div><Label>Type</Label>
+              <Select value={form.type || 'rom'} onValueChange={v => setForm(f => ({ ...f, type: v }))}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent><SelectItem value="hybel">Hybel</SelectItem><SelectItem value="rom">Rom</SelectItem><SelectItem value="leilighet">Leilighet</SelectItem><SelectItem value="annet">Annet</SelectItem></SelectContent>
+              </Select>
+            </div>
             <div><Label>Status</Label>
               <Select value={form.status || 'ledig'} onValueChange={v => setForm(f => ({ ...f, status: v }))}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent><SelectItem value="utleid">Utleid</SelectItem><SelectItem value="ledig">Ledig</SelectItem><SelectItem value="vedlikehold">Vedlikehold</SelectItem><SelectItem value="ikke_i_bruk">Ikke i bruk</SelectItem></SelectContent>
+              </Select>
+            </div>
+          </div>
+          <div><Label>Boenhet</Label><Input value={form.boenhet || ''} onChange={e => setForm(f => ({ ...f, boenhet: e.target.value }))} placeholder="F.eks. Boenhet 1 — Hovedhus" /></div>
+          <div className="grid grid-cols-2 gap-3">
+            <div><Label>Etasje</Label><Input value={form.etasje || ''} onChange={e => setForm(f => ({ ...f, etasje: e.target.value }))} /></div>
+            <div><Label>Skattemessig type</Label>
+              <Select value={form.skattemessig_type || ''} onValueChange={v => setForm(f => ({ ...f, skattemessig_type: v }))}>
+                <SelectTrigger><SelectValue placeholder="Velg" /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="utleid">Utleid</SelectItem>
-                  <SelectItem value="ledig">Ledig</SelectItem>
-                  <SelectItem value="vedlikehold">Vedlikehold</SelectItem>
-                  <SelectItem value="ikke_i_bruk">Ikke i bruk</SelectItem>
+                  <SelectItem value="del_av_bofellesskap">Del av bofellesskap</SelectItem>
+                  <SelectItem value="uselvstendig_hybel">Uselvstendig hybel</SelectItem>
+                  <SelectItem value="selvstendig_hybel">Selvstendig hybel</SelectItem>
+                  <SelectItem value="familieleilighet">Familieleilighet</SelectItem>
                 </SelectContent>
               </Select>
             </div>
           </div>
-          <div><Label>Fasiliteter</Label><Textarea value={form.fasiliteter || ''} onChange={e => setForm(f => ({ ...f, fasiliteter: e.target.value }))} /></div>
+          <div className="grid grid-cols-2 gap-3">
+            <div><Label>Markedsleie estimat</Label><Input type="number" value={form.markedsleie_estimat || ''} onChange={e => setForm(f => ({ ...f, markedsleie_estimat: e.target.value }))} /></div>
+            <div><Label>Standard månedsleie</Label><Input type="number" value={form.maanedsleie_standard || ''} onChange={e => setForm(f => ({ ...f, maanedsleie_standard: e.target.value }))} /></div>
+          </div>
+          <div><Label>Disponert av (eier)</Label><Input value={form.disponert_av || ''} onChange={e => setForm(f => ({ ...f, disponert_av: e.target.value }))} placeholder="Tomt = utleieenhet" /></div>
+          <div><Label>Beskrivelse</Label><Textarea value={form.beskrivelse || ''} onChange={e => setForm(f => ({ ...f, beskrivelse: e.target.value }))} /></div>
+          <div><Label>Areal (m²)</Label><Input type="number" value={form.areal_kvm || ''} onChange={e => setForm(f => ({ ...f, areal_kvm: e.target.value }))} /></div>
         </div>
         <DialogFooter><Button onClick={onSave}>Lagre</Button></DialogFooter>
       </DialogContent>
@@ -231,39 +246,82 @@ export default function Enheter() {
         <Button onClick={() => { setForm({}); setShowNew(true); }}><Plus className="h-4 w-4 mr-1" /> Ny enhet</Button>
       </div>
 
+      <div className="flex items-start gap-2 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+        <Info className="h-5 w-5 text-blue-500 mt-0.5 shrink-0" />
+        <p className="text-sm text-blue-800">
+          All leieinntekt fra E7 er skattepliktig som kapitalinntekt (22 %). 2 boenheter (under næringsgrensen). Alle driftskostnader er fradragsberettigede.
+        </p>
+      </div>
+
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Card><CardContent className="pt-4"><div className="text-2xl font-bold">{enheter.length}</div><div className="text-sm text-muted-foreground">Totalt enheter</div></CardContent></Card>
+        <Card><CardContent className="pt-4"><div className="text-2xl font-bold">{utleieEnheter.length}</div><div className="text-sm text-muted-foreground">Utleieenheter</div></CardContent></Card>
         <Card><CardContent className="pt-4"><div className="text-2xl font-bold text-green-600">{utleid}</div><div className="text-sm text-muted-foreground">Utleid</div></CardContent></Card>
-        <Card><CardContent className="pt-4"><div className="text-2xl font-bold text-yellow-600">{ledig}</div><div className="text-sm text-muted-foreground">Ledig</div></CardContent></Card>
+        <Card><CardContent className="pt-4"><div className="text-2xl font-bold text-yellow-600">{ledigCount}</div><div className="text-sm text-muted-foreground">Ledig</div></CardContent></Card>
         <Card><CardContent className="pt-4"><div className="text-2xl font-bold">{belegg.toFixed(0)} %</div><div className="text-sm text-muted-foreground">Beleggsprosent</div></CardContent></Card>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {enheter.map(e => {
-          const aktivt = getAktivtLeieforhold(e.id);
-          const lt = aktivt ? getLeietaker(aktivt.leietaker_id) : null;
-          return (
-            <Card key={e.id} className="cursor-pointer hover:border-primary/50 transition-colors" onClick={() => setSelected(e)}>
-              <CardContent className="pt-4 space-y-2">
-                <div className="flex items-center justify-between">
-                  <h3 className="font-semibold text-lg">{e.navn}</h3>
-                  {typeBadge(e.type)}
-                </div>
-                {statusBadge(e.status)}
-                {lt && aktivt && (
-                  <div className="text-sm space-y-1 pt-1 border-t">
-                    <div className="text-muted-foreground">Leietaker: <span className="text-foreground font-medium">{lt.navn}</span></div>
-                    <div className="text-muted-foreground">Avtalt leie: <span className="text-foreground font-mono">{formatBelop(aktivt.avtalt_leie)}</span></div>
-                  </div>
-                )}
-                {e.maanedsleie_standard && e.maanedsleie_standard > 0 && (
-                  <div className="text-xs text-muted-foreground">Standard: {formatBelop(e.maanedsleie_standard)}</div>
-                )}
-              </CardContent>
-            </Card>
-          );
-        })}
-      </div>
+      {boenheter.map(boenhet => {
+        const boEnheter = enheter.filter(e => e.boenhet === boenhet);
+        return (
+          <div key={boenhet} className="space-y-3">
+            <h2 className="text-lg font-semibold border-b pb-1">{boenhet}</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {boEnheter.map(e => {
+                const isEier = !!e.disponert_av;
+                const aktivt = !isEier ? getAktivtLeieforhold(e.id) : null;
+                const lt = aktivt ? getLeietaker(aktivt.leietaker_id) : null;
+                return (
+                  <Card key={e.id} className={`cursor-pointer hover:border-primary/50 transition-colors ${isEier ? 'bg-blue-50/50 border-blue-200' : ''}`} onClick={() => setSelected(e)}>
+                    <CardContent className="pt-4 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <h3 className="font-semibold text-lg">{e.navn}</h3>
+                        <div className="flex gap-1">
+                          {typeBadge(e.type)}
+                          {e.etasje && <Badge variant="outline" className="text-xs">{e.etasje}</Badge>}
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {isEier ? <Badge className="bg-blue-100 text-blue-800 border-blue-200">Eier: {e.disponert_av}</Badge> : statusBadge(e.status)}
+                      </div>
+                      {lt && aktivt && (
+                        <div className="text-sm space-y-1 pt-1 border-t">
+                          <div className="text-muted-foreground">Leietaker: <span className="text-foreground font-medium">{lt.navn}</span></div>
+                          <div className="text-muted-foreground">Avtalt leie: <span className="text-foreground font-mono">{formatBelop(aktivt.avtalt_leie)}</span></div>
+                        </div>
+                      )}
+                      {e.markedsleie_estimat && e.markedsleie_estimat > 0 && (
+                        <div className="text-xs text-muted-foreground">Markedsleie: {formatBelop(e.markedsleie_estimat)}</div>
+                      )}
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+          </div>
+        );
+      })}
+
+      {/* Enheter uten boenhet */}
+      {enheter.filter(e => !e.boenhet).length > 0 && (
+        <div className="space-y-3">
+          <h2 className="text-lg font-semibold border-b pb-1">Uten boenhet</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {enheter.filter(e => !e.boenhet).map(e => {
+              const aktivt = getAktivtLeieforhold(e.id);
+              const lt = aktivt ? getLeietaker(aktivt.leietaker_id) : null;
+              return (
+                <Card key={e.id} className="cursor-pointer hover:border-primary/50 transition-colors" onClick={() => setSelected(e)}>
+                  <CardContent className="pt-4 space-y-2">
+                    <div className="flex items-center justify-between"><h3 className="font-semibold text-lg">{e.navn}</h3>{typeBadge(e.type)}</div>
+                    {statusBadge(e.status)}
+                    {lt && aktivt && <div className="text-sm text-muted-foreground">Leietaker: <span className="text-foreground font-medium">{lt.navn}</span></div>}
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {showNew && enhetForm(saveNew, 'Ny enhet')}
       {editing && enhetForm(saveEdit, 'Rediger enhet')}
