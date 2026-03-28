@@ -34,11 +34,14 @@ import {
 } from '@/components/ui/sidebar';
 import { Button } from '@/components/ui/button';
 
-const navItems = [
-  { title: 'Dashboard', url: '/', icon: LayoutDashboard },
+const importDataItems = [
   { title: 'Transaksjoner', url: '/transaksjoner', icon: List },
   { title: 'Import', url: '/import', icon: Upload },
   { title: 'Datavasking', url: '/datavasking', icon: Sparkles },
+];
+
+const navItems = [
+  { title: 'Dashboard', url: '/', icon: LayoutDashboard },
   { title: 'Enheter', url: '/enheter', icon: DoorOpen },
   { title: 'Leietakere', url: '/leietakere', icon: Users },
   { title: 'Kontrakter', url: '/kontrakter', icon: FileSignature },
