@@ -46,11 +46,11 @@ const utleieItems = [
   { title: 'Leietakere', url: '/leietakere', icon: Users },
   { title: 'Kontrakter', url: '/kontrakter', icon: FileSignature },
   { title: 'Leieinntekter', url: '/leieinntekter', icon: Home },
-  { title: 'Skattemeldingsgrunnlag', url: '/skatt', icon: FileText },
 ];
 
-const privatItems = [
+const ekonomiItems = [
   { title: 'Abonnementer', url: '/abonnementer', icon: CreditCard },
+  { title: 'Skattemeldingsgrunnlag', url: '/skatt', icon: FileText },
 ];
 
 const importItems = [
@@ -123,11 +123,11 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
 
-        {/* Privatøkonomi */}
+        {/* Økonomi */}
         <SidebarGroup>
-          {!collapsed && <SidebarGroupLabel>Privatøkonomi</SidebarGroupLabel>}
+          {!collapsed && <SidebarGroupLabel>Økonomi</SidebarGroupLabel>}
           <SidebarGroupContent>
-            <SidebarMenu>{renderItems(privatItems)}</SidebarMenu>
+            <SidebarMenu>{renderItems(ekonomiItems)}</SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
 
