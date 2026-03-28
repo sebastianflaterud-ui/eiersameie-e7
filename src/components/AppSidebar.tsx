@@ -50,7 +50,7 @@ const navItems = [
   { title: 'Beleggsoversikt', url: '/belegg', icon: CalendarDays },
   { title: 'Kalender', url: '/kalender', icon: CalendarDays },
   { title: 'Leieinntekter', url: '/leieinntekter', icon: Home },
-  { title: 'Eiersameie E7', url: '/eiersameie', icon: Building },
+  { title: 'Eiersameie', url: '/eiersameie', icon: Building },
   { title: 'Eiere', url: '/eiere', icon: Users },
   { title: 'Mellomværende', url: '/mellomvaerende', icon: Handshake },
   { title: 'Investeringer', url: '/investeringer', icon: Hammer },
