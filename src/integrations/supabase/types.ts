@@ -360,6 +360,218 @@ export type Database = {
         }
         Relationships: []
       }
+      faktura_betalinger: {
+        Row: {
+          belop: number
+          dato: string
+          faktura_id: string
+          id: string
+          opprettet: string | null
+          transaksjon_id: string | null
+          user_id: string
+        }
+        Insert: {
+          belop: number
+          dato: string
+          faktura_id: string
+          id?: string
+          opprettet?: string | null
+          transaksjon_id?: string | null
+          user_id: string
+        }
+        Update: {
+          belop?: number
+          dato?: string
+          faktura_id?: string
+          id?: string
+          opprettet?: string | null
+          transaksjon_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "faktura_betalinger_faktura_id_fkey"
+            columns: ["faktura_id"]
+            isOneToOne: false
+            referencedRelation: "fakturaer"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "faktura_betalinger_transaksjon_id_fkey"
+            columns: ["transaksjon_id"]
+            isOneToOne: false
+            referencedRelation: "transaksjoner"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      faktura_justeringer: {
+        Row: {
+          faktura_id: string
+          fra_verdi: string | null
+          id: string
+          kommentar: string
+          opprettet: string | null
+          til_verdi: string | null
+          type: string
+          user_id: string
+          utfort_av: string | null
+        }
+        Insert: {
+          faktura_id: string
+          fra_verdi?: string | null
+          id?: string
+          kommentar: string
+          opprettet?: string | null
+          til_verdi?: string | null
+          type: string
+          user_id: string
+          utfort_av?: string | null
+        }
+        Update: {
+          faktura_id?: string
+          fra_verdi?: string | null
+          id?: string
+          kommentar?: string
+          opprettet?: string | null
+          til_verdi?: string | null
+          type?: string
+          user_id?: string
+          utfort_av?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "faktura_justeringer_faktura_id_fkey"
+            columns: ["faktura_id"]
+            isOneToOne: false
+            referencedRelation: "fakturaer"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      faktura_mottakere: {
+        Row: {
+          belop: number
+          betalingsreferanse: string | null
+          faktura_id: string
+          id: string
+          kontonummer: string
+          mottaker_navn: string
+          opprettet: string | null
+          user_id: string
+        }
+        Insert: {
+          belop: number
+          betalingsreferanse?: string | null
+          faktura_id: string
+          id?: string
+          kontonummer: string
+          mottaker_navn: string
+          opprettet?: string | null
+          user_id: string
+        }
+        Update: {
+          belop?: number
+          betalingsreferanse?: string | null
+          faktura_id?: string
+          id?: string
+          kontonummer?: string
+          mottaker_navn?: string
+          opprettet?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "faktura_mottakere_faktura_id_fkey"
+            columns: ["faktura_id"]
+            isOneToOne: false
+            referencedRelation: "fakturaer"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fakturaer: {
+        Row: {
+          aar: number
+          belop: number
+          betalt_belop: number | null
+          betalt_dato: string | null
+          enhet_id: string | null
+          fakturanr: string
+          forfall: string
+          generert_dato: string
+          id: string
+          leieforhold_id: string
+          leietaker_id: string
+          maaned: string
+          notater: string | null
+          oppdatert: string | null
+          opprettet: string | null
+          status: string
+          user_id: string
+        }
+        Insert: {
+          aar: number
+          belop: number
+          betalt_belop?: number | null
+          betalt_dato?: string | null
+          enhet_id?: string | null
+          fakturanr: string
+          forfall: string
+          generert_dato?: string
+          id?: string
+          leieforhold_id: string
+          leietaker_id: string
+          maaned: string
+          notater?: string | null
+          oppdatert?: string | null
+          opprettet?: string | null
+          status?: string
+          user_id: string
+        }
+        Update: {
+          aar?: number
+          belop?: number
+          betalt_belop?: number | null
+          betalt_dato?: string | null
+          enhet_id?: string | null
+          fakturanr?: string
+          forfall?: string
+          generert_dato?: string
+          id?: string
+          leieforhold_id?: string
+          leietaker_id?: string
+          maaned?: string
+          notater?: string | null
+          oppdatert?: string | null
+          opprettet?: string | null
+          status?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fakturaer_enhet_id_fkey"
+            columns: ["enhet_id"]
+            isOneToOne: false
+            referencedRelation: "enheter"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fakturaer_leieforhold_id_fkey"
+            columns: ["leieforhold_id"]
+            isOneToOne: false
+            referencedRelation: "leieforhold"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fakturaer_leietaker_id_fkey"
+            columns: ["leietaker_id"]
+            isOneToOne: false
+            referencedRelation: "leietakere"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       investering_bidrag: {
         Row: {
           betalt_av: string | null
