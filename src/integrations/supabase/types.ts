@@ -131,45 +131,54 @@ export type Database = {
         Row: {
           aktiv: boolean | null
           eierandel_prosent: number
+          epost: string | null
           gyldig_fra: string | null
           gyldig_til: string | null
           id: string
+          identifikator: string | null
           inntektsandel_prosent: number
           kostnadsandel_prosent: number
           navn: string
           notater: string | null
           opprettet: string | null
           orgnr: string | null
+          telefon: string | null
           type: string
           user_id: string
         }
         Insert: {
           aktiv?: boolean | null
           eierandel_prosent: number
+          epost?: string | null
           gyldig_fra?: string | null
           gyldig_til?: string | null
           id?: string
+          identifikator?: string | null
           inntektsandel_prosent: number
           kostnadsandel_prosent: number
           navn: string
           notater?: string | null
           opprettet?: string | null
           orgnr?: string | null
+          telefon?: string | null
           type: string
           user_id: string
         }
         Update: {
           aktiv?: boolean | null
           eierandel_prosent?: number
+          epost?: string | null
           gyldig_fra?: string | null
           gyldig_til?: string | null
           id?: string
+          identifikator?: string | null
           inntektsandel_prosent?: number
           kostnadsandel_prosent?: number
           navn?: string
           notater?: string | null
           opprettet?: string | null
           orgnr?: string | null
+          telefon?: string | null
           type?: string
           user_id?: string
         }
