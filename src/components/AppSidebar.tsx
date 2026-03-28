@@ -17,6 +17,22 @@ import {
   DoorOpen,
   CalendarDays,
   FileSignature,
+  Database,
+} from 'lucide-react';
+  Home,
+  Building,
+  CreditCard,
+  FileText,
+  Settings,
+  Wallet,
+  MessageSquare,
+  LogOut,
+  Users,
+  Handshake,
+  Hammer,
+  DoorOpen,
+  CalendarDays,
+  FileSignature,
 } from 'lucide-react';
 import { NavLink } from '@/components/NavLink';
 import { useLocation } from 'react-router-dom';
