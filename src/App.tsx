@@ -18,6 +18,8 @@ import Skatt from "./pages/Skatt";
 import Regler from "./pages/Regler";
 import Kontoer from "./pages/Kontoer";
 import Chat from "./pages/Chat";
+import Mellomvaerende from "./pages/Mellomvaerende";
+import Investeringer from "./pages/Investeringer";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -47,6 +49,8 @@ function ProtectedRoutes() {
         <Route path="/leieinntekter" element={<Leieinntekter />} />
         <Route path="/eiersameie" element={<Eiersameie />} />
         <Route path="/eiere" element={<Eiere />} />
+        <Route path="/mellomvaerende" element={<Mellomvaerende />} />
+        <Route path="/investeringer" element={<Investeringer />} />
         <Route path="/abonnementer" element={<Abonnementer />} />
         <Route path="/skatt" element={<Skatt />} />
         <Route path="/regler" element={<Regler />} />
