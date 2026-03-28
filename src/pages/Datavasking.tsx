@@ -46,6 +46,7 @@ export default function Datavasking() {
   const [eiere, setEiere] = useState<Eier[]>([]);
   const [bilagList, setBilagList] = useState<Bilag[]>([]);
   const [uploading, setUploading] = useState(false);
+  const [aiClassifying, setAiClassifying] = useState(false);
 
   useEffect(() => {
     supabase.from('eiere').select('id, navn').then(({ data }) => { if (data) setEiere(data as Eier[]); });
