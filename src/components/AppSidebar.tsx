@@ -12,6 +12,8 @@ import {
   MessageSquare,
   LogOut,
   Users,
+  Handshake,
+  Hammer,
 } from 'lucide-react';
 import { NavLink } from '@/components/NavLink';
 import { useLocation } from 'react-router-dom';
@@ -37,6 +39,8 @@ const navItems = [
   { title: 'Leieinntekter', url: '/leieinntekter', icon: Home },
   { title: 'Eiersameie E7', url: '/eiersameie', icon: Building },
   { title: 'Eiere', url: '/eiere', icon: Users },
+  { title: 'Mellomværende', url: '/mellomvaerende', icon: Handshake },
+  { title: 'Investeringer', url: '/investeringer', icon: Hammer },
   { title: 'Abonnementer', url: '/abonnementer', icon: CreditCard },
   { title: 'Skattemeldingsgrunnlag', url: '/skatt', icon: FileText },
   { title: 'Regler', url: '/regler', icon: Settings },

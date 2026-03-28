@@ -5,8 +5,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { formatBelop } from '@/lib/format';
-import { AlertTriangle, Download, Paperclip } from 'lucide-react';
+import { formatBelop, formatDato } from '@/lib/format';
+import { AlertTriangle, Download, Paperclip, Handshake } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'Mai', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Des'];
@@ -25,6 +25,8 @@ export default function Skatt() {
   const [uklassifisertCount, setUklassifisertCount] = useState(0);
   const [totals, setTotals] = useState({ brutto: 0, fradrag: 0, netto: 0 });
   const [bilagStats, setBilagStats] = useState({ med: 0, uten: 0 });
+  const [mvData, setMvData] = useState<any[]>([]);
+  const [mvBevegelser, setMvBevegelser] = useState<any[]>([]);
 
   useEffect(() => {
     supabase.from('eiere').select('*').eq('aktiv', true).then(({ data }) => {
@@ -73,6 +75,12 @@ export default function Skatt() {
         const withBilag = new Set((bilagData || []).map((b: any) => b.transaksjon_id));
         setBilagStats({ med: withBilag.size, uten: txIds.length - withBilag.size });
       }
+
+      // Mellomværende data
+      const { data: mvRows } = await supabase.from('mellomvaerende').select('*').eq('aktiv', true);
+      if (mvRows) setMvData(mvRows);
+      const { data: bevRows } = await supabase.from('mellomvaerende_bevegelser').select('*');
+      if (bevRows) setMvBevegelser(bevRows);
     }
     fetch();
   }, [year]);
@@ -296,6 +304,43 @@ export default function Skatt() {
                 ))}
               </TableBody>
             </Table>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Section: Mellomværende */}
+      {isPerEier && currentEier && mvData.filter(mv => mv.kreditor === selectedEier).length > 0 && (
+        <Card>
+          <CardHeader><CardTitle className="flex items-center gap-2"><Handshake className="h-5 w-5" />Mellomværende (skatteåret {year})</CardTitle></CardHeader>
+          <CardContent>
+            <Table>
+              <TableHeader><TableRow><TableHead>Mellomværende</TableHead><TableHead className="text-right">Saldo 01.01</TableHead><TableHead className="text-right">Nedbetalinger i året</TableHead><TableHead className="text-right">Saldo 31.12</TableHead></TableRow></TableHeader>
+              <TableBody>
+                {mvData.filter(mv => mv.kreditor === selectedEier).map(mv => {
+                  const bevs = mvBevegelser.filter(b => b.mellomvaerende_id === mv.id);
+                  const yearBevs = bevs.filter(b => b.dato >= `${year}-01-01` && b.dato <= `${year}-12-31`);
+                  const afterJan1 = bevs.filter(b => b.dato >= `${year}-01-01`);
+                  const nedbetalingerYear = yearBevs.filter(b => b.type === 'nedbetaling').reduce((s: number, b: any) => s + Number(b.belop), 0);
+                  // Saldo 31.12 = gjeldende_saldo (approx) for current year
+                  const saldo3112 = Number(mv.gjeldende_saldo);
+                  const saldo0101 = saldo3112 + nedbetalingerYear;
+                  return (
+                    <TableRow key={mv.id}>
+                      <TableCell className="font-medium">{mv.navn}</TableCell>
+                      <TableCell className="text-right font-mono">{formatBelop(saldo0101)}</TableCell>
+                      <TableCell className="text-right font-mono text-green-600">-{formatBelop(nedbetalingerYear)}</TableCell>
+                      <TableCell className="text-right font-mono font-bold">{formatBelop(saldo3112)}</TableCell>
+                    </TableRow>
+                  );
+                })}
+                <TableRow className="font-bold">
+                  <TableCell>Totalt utestående</TableCell>
+                  <TableCell></TableCell><TableCell></TableCell>
+                  <TableCell className="text-right font-mono">{formatBelop(mvData.filter(mv => mv.kreditor === selectedEier).reduce((s: number, mv: any) => s + Number(mv.gjeldende_saldo), 0))}</TableCell>
+                </TableRow>
+              </TableBody>
+            </Table>
+            <p className="text-sm text-muted-foreground mt-2">Dokumenterer hvorfor Sebastian mottar mer enn sin egen inntektsandel av leien.</p>
           </CardContent>
         </Card>
       )}
