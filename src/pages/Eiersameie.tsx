@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { formatBelop, formatDato } from '@/lib/format';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { useNavigate } from 'react-router-dom';
-import { Handshake } from 'lucide-react';
+import { Handshake, AlertTriangle } from 'lucide-react';
 
 interface Eier { id: string; navn: string; inntektsandel_prosent: number; kostnadsandel_prosent: number; aktiv: boolean | null; }
 
@@ -141,6 +141,7 @@ export default function Eiersameie() {
         </div>
       )}
 
+      {mvData.length > 0 && (
         <div className="flex items-center gap-2 p-3 bg-blue-50 border border-blue-200 rounded-lg cursor-pointer" onClick={() => navigate('/mellomvaerende')}>
           <Handshake className="h-4 w-4 text-blue-600" />
           <span className="text-sm text-blue-800">
