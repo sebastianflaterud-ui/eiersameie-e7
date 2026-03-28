@@ -17,10 +17,8 @@ import {
   DoorOpen,
   CalendarDays,
   FileSignature,
-  Database,
 } from 'lucide-react';
 import { NavLink } from '@/components/NavLink';
-import { useLocation } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import {
   Sidebar,
@@ -36,26 +34,32 @@ import {
 } from '@/components/ui/sidebar';
 import { Button } from '@/components/ui/button';
 
-const importDataItems = [
+const eiendomItems = [
+  { title: 'Enheter', url: '/enheter', icon: DoorOpen },
+  { title: 'Leietakere', url: '/leietakere', icon: Users },
+  { title: 'Kontrakter', url: '/kontrakter', icon: FileSignature },
+  { title: 'Kalender', url: '/kalender', icon: CalendarDays },
+];
+
+const utleieItems = [
+  { title: 'Leieinntekter', url: '/leieinntekter', icon: Home },
+  { title: 'Eiersameie', url: '/eiersameie', icon: Building },
+  { title: 'Mellomværende', url: '/mellomvaerende', icon: Handshake },
+  { title: 'Investeringer', url: '/investeringer', icon: Hammer },
+  { title: 'Skattemeldingsgrunnlag', url: '/skatt', icon: FileText },
+];
+
+const privatItems = [
+  { title: 'Abonnementer', url: '/abonnementer', icon: CreditCard },
+];
+
+const importItems = [
   { title: 'Transaksjoner', url: '/transaksjoner', icon: List },
   { title: 'Import', url: '/import', icon: Upload },
   { title: 'Datavasking', url: '/datavasking', icon: Sparkles },
 ];
 
-const navItems = [
-  { title: 'Dashboard', url: '/', icon: LayoutDashboard },
-  { title: 'Enheter', url: '/enheter', icon: DoorOpen },
-  { title: 'Leietakere', url: '/leietakere', icon: Users },
-  { title: 'Kontrakter', url: '/kontrakter', icon: FileSignature },
-  { title: 'Beleggsoversikt', url: '/belegg', icon: CalendarDays },
-  { title: 'Kalender', url: '/kalender', icon: CalendarDays },
-  { title: 'Leieinntekter', url: '/leieinntekter', icon: Home },
-  { title: 'Eiersameie', url: '/eiersameie', icon: Building },
-  { title: 'Eiere', url: '/eiere', icon: Users },
-  { title: 'Mellomværende', url: '/mellomvaerende', icon: Handshake },
-  { title: 'Investeringer', url: '/investeringer', icon: Hammer },
-  { title: 'Abonnementer', url: '/abonnementer', icon: CreditCard },
-  { title: 'Skattemeldingsgrunnlag', url: '/skatt', icon: FileText },
+const innstillingerItems = [
   { title: 'Regler', url: '/regler', icon: Settings },
   { title: 'Kontoer', url: '/kontoer', icon: Wallet },
   { title: 'Chat', url: '/chat', icon: MessageSquare },
@@ -64,10 +68,9 @@ const navItems = [
 export function AppSidebar() {
   const { state } = useSidebar();
   const collapsed = state === 'collapsed';
-  const location = useLocation();
   const { signOut } = useAuth();
 
-  const renderItems = (items: typeof navItems) =>
+  const renderItems = (items: { title: string; url: string; icon: any }[]) =>
     items.map((item) => (
       <SidebarMenuItem key={item.url}>
         <SidebarMenuButton asChild>
@@ -99,8 +102,32 @@ export function AppSidebar() {
         <SidebarGroup>
           <SidebarGroupContent>
             <SidebarMenu>
-              {renderItems([navItems[0]])}
+              {renderItems([{ title: 'Dashboard', url: '/', icon: LayoutDashboard }])}
             </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
+        {/* Eiendom */}
+        <SidebarGroup>
+          {!collapsed && <SidebarGroupLabel>Eiendom</SidebarGroupLabel>}
+          <SidebarGroupContent>
+            <SidebarMenu>{renderItems(eiendomItems)}</SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
+        {/* Utleie */}
+        <SidebarGroup>
+          {!collapsed && <SidebarGroupLabel>Utleie</SidebarGroupLabel>}
+          <SidebarGroupContent>
+            <SidebarMenu>{renderItems(utleieItems)}</SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
+        {/* Privatøkonomi */}
+        <SidebarGroup>
+          {!collapsed && <SidebarGroupLabel>Privatøkonomi</SidebarGroupLabel>}
+          <SidebarGroupContent>
+            <SidebarMenu>{renderItems(privatItems)}</SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
 
@@ -108,18 +135,15 @@ export function AppSidebar() {
         <SidebarGroup>
           {!collapsed && <SidebarGroupLabel>Import og data</SidebarGroupLabel>}
           <SidebarGroupContent>
-            <SidebarMenu>
-              {renderItems(importDataItems)}
-            </SidebarMenu>
+            <SidebarMenu>{renderItems(importItems)}</SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
 
-        {/* Resten */}
+        {/* Innstillinger */}
         <SidebarGroup>
+          {!collapsed && <SidebarGroupLabel>Innstillinger</SidebarGroupLabel>}
           <SidebarGroupContent>
-            <SidebarMenu>
-              {renderItems(navItems.slice(1))}
-            </SidebarMenu>
+            <SidebarMenu>{renderItems(innstillingerItems)}</SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
