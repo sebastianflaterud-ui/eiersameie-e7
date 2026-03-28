@@ -116,9 +116,23 @@ Betalingsoppfølging og kalender:
 - Forventet beregnes fra leieforhold. Faktisk fra transaksjoner.
 - Utestående = forventet minus betalt der betalt < forventet.
 - Boligkalenderen har vedlikeholdspåminnelser og automatiske datoer fra leieforhold.
-- Typiske spørsmål: "Hvem skylder husleie?", "Hva er utestående per i dag?", "Når skal ventilasjonsfiltre byttes?", "Vis kommende vedlikehold", "Har alle betalt for mars?"
+
+Fakturering og betalingsoppfølging:
+- Fakturaer genereres automatisk for husleie basert på aktive leieforhold.
+- Hver faktura har fakturanummer (F2026-001), leietaker, måned, beløp, forfall og status.
+- Betalinger fra banken kobles til fakturaer. Ubetalte fakturaer markeres som forfalt.
+- Smart månedsforslag: basert på betalingsdato og leietakers forfall_dag.
+- Justeringer logges med kommentar.
+- Data finnes i fakturaer, faktura_betalinger, faktura_mottakere og faktura_justeringer tabellene.
+- Typiske spørsmål: "Hvem har ikke betalt for mars?", "Vis alle forfalte fakturaer", "Generer faktura for april", "Hva er utestående totalt?", "Vis betalingshistorikk for Camilla"
 
 ${txSummary}${abSummary}${eiereSummary}${mvSummary}${mvBevSummary}${enheterSummary}${leietakereSummary}${leieforholdSummary}`;
+
+    // Also fetch faktura data for chat
+    const { data: fakturaData } = await supabase.from('fakturaer').select('*').eq('user_id', user.id).order('forfall', { ascending: false }).limit(100);
+    const fakturaSummary = fakturaData && fakturaData.length > 0 ? `\n\nFakturaer (${fakturaData.length}):\n${JSON.stringify(fakturaData, null, 0)}` : "";
+
+    const fullSystemPrompt = systemPrompt + fakturaSummary;
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
