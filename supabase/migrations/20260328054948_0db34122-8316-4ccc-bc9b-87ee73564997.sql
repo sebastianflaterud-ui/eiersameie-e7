@@ -1,0 +1,1 @@
+ALTER TABLE public.transaksjoner ADD COLUMN mangler_underlag boolean NOT NULL DEFAULT false;

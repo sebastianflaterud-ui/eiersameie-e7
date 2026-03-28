@@ -26,6 +26,7 @@ interface Transaksjon {
   leieperiode: string | null; enhet: string | null; notater: string | null;
   skatteaar: number | null; fradragsberettiget: boolean | null; bokforingsdato: string | null;
   er_oppgjor: boolean | null; oppgjor_til: string | null;
+  mangler_underlag: boolean | null;
 }
 
 interface Bilag { id: string; filnavn: string; filtype: string; storage_path: string; }
@@ -101,6 +102,7 @@ export default function Datavasking() {
       notater: t.notater || '', skatteaar: t.skatteaar || '',
       er_oppgjor: t.er_oppgjor || false, oppgjor_til: t.oppgjor_til || '',
       betaler_eier: (t as any).betaler_eier || '', kostnadsbeskrivelse: (t as any).kostnadsbeskrivelse || '',
+      mangler_underlag: t.mangler_underlag || false,
     });
     fetchBilag(t.id);
   };
@@ -118,6 +120,8 @@ export default function Datavasking() {
       klassifisering_status: status as any,
       er_oppgjor: detailForm.er_oppgjor, oppgjor_til: detailForm.er_oppgjor ? (detailForm.oppgjor_til || null) : null,
       betaler_eier: detailForm.betaler_eier || null, kostnadsbeskrivelse: detailForm.kostnadsbeskrivelse || null,
+      mangler_underlag: detailForm.mangler_underlag || false,
+      fradragsberettiget: detailForm.mangler_underlag ? false : undefined,
     } as any).eq('id', detailItem.id);
     if (error) { toast.error(error.message); return; }
     toast.success('Lagret');
@@ -297,7 +301,13 @@ export default function Datavasking() {
                     <div className="space-y-1"><Label>Leverandør</Label><Input value={detailForm.leverandor} onChange={e => setDetailForm(p => ({ ...p, leverandor: e.target.value }))} /></div>
                     <div className="space-y-1"><Label>Kostnadstype</Label><Input value={detailForm.kostnadstype} onChange={e => setDetailForm(p => ({ ...p, kostnadstype: e.target.value }))} /></div>
                   </div>
-                  {detailForm.kategori === 'Eiersameie E7' && (
+                   {detailForm.kategori === 'Eiersameie E7' && (
+                    <>
+                    <div className="flex items-center gap-2 p-3 bg-gray-50 rounded-lg border">
+                      <Switch checked={detailForm.mangler_underlag} onCheckedChange={v => setDetailForm(p => ({ ...p, mangler_underlag: v }))} />
+                      <Label className="text-sm">Mangler kvittering/underlag</Label>
+                      {detailForm.mangler_underlag && <Badge variant="secondary" className="ml-auto text-xs">Ekskluderes fra skattemelding</Badge>}
+                    </div>
                     <div className="grid grid-cols-2 gap-3 p-3 bg-orange-50 rounded-lg border border-orange-200">
                       <div className="space-y-1">
                         <Label>Betaler (hvem la ut)</Label>
