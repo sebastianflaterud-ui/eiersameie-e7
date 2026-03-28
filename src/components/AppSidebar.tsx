@@ -36,12 +36,12 @@ import { Button } from '@/components/ui/button';
 
 const eiendomItems = [
   { title: 'Enheter', url: '/enheter', icon: DoorOpen },
-  { title: 'Leietakere', url: '/leietakere', icon: Users },
   { title: 'Kontrakter', url: '/kontrakter', icon: FileSignature },
   { title: 'Kalender', url: '/kalender', icon: CalendarDays },
 ];
 
 const utleieItems = [
+  { title: 'Leietakere', url: '/leietakere', icon: Users },
   { title: 'Leieinntekter', url: '/leieinntekter', icon: Home },
   { title: 'Eiersameie', url: '/eiersameie', icon: Building },
   { title: 'Mellomværende', url: '/mellomvaerende', icon: Handshake },
