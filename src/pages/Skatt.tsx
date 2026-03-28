@@ -150,6 +150,22 @@ export default function Skatt() {
         </div>
       </div>
 
+      {/* Skattemessig klassifisering */}
+      <Card>
+        <CardHeader><CardTitle>Skattemessig klassifisering</CardTitle></CardHeader>
+        <CardContent>
+          <div className="font-mono text-sm space-y-1 p-4 bg-muted rounded-lg">
+            <div className="flex justify-between"><span>Eiendom:</span><span>Enerhøgdveien 7A, 1459 Nesodden</span></div>
+            <div className="flex justify-between"><span>Type:</span><span>Tomannsbolig (enebolig med bileilighet)</span></div>
+            <div className="flex justify-between"><span>Antall boenheter:</span><span>2 (hovedhus bofellesskap + bileilighet)</span></div>
+            <div className="flex justify-between"><span>Næringsvirksomhet:</span><span>Nei (under 5 boenheter)</span></div>
+            <div className="flex justify-between"><span>50 %-regelen:</span><span>Ikke oppfylt</span></div>
+            <div className="flex justify-between"><span>Konsekvens:</span><span>All leieinntekt skattepliktig (22 % av netto)</span></div>
+            <div className="flex justify-between"><span></span><span>Alle driftskostnader fradragsberettigede</span></div>
+          </div>
+        </CardContent>
+      </Card>
+
       {uklassifisertCount > 0 && (
         <div className="flex items-center gap-2 p-4 bg-orange-50 border border-orange-200 rounded-lg cursor-pointer" onClick={() => navigate('/datavasking')}>
           <AlertTriangle className="h-5 w-5 text-orange-500" />
