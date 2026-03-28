@@ -218,7 +218,7 @@ export default function Datavasking() {
       <Progress value={pct} className="h-2" />
       <p className="text-sm text-muted-foreground">{pct}% klassifisert</p>
 
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2 flex-wrap">
         <Select value={filter} onValueChange={v => { setFilter(v as FilterType); setPage(0); }}>
           <SelectTrigger className="w-[200px]"><SelectValue /></SelectTrigger>
           <SelectContent>
@@ -228,6 +228,10 @@ export default function Datavasking() {
             <SelectItem value="auto">Kun autoklassifiserte</SelectItem>
           </SelectContent>
         </Select>
+        <Button variant="outline" onClick={aiClassify} disabled={aiClassifying}>
+          {aiClassifying ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Sparkles className="h-4 w-4 mr-1" />}
+          {aiClassifying ? 'Klassifiserer...' : 'AI-klassifiser'}
+        </Button>
         {selected.size > 0 && (
           <div className="flex gap-1 ml-4">
             <span className="text-sm text-muted-foreground mr-2">{selected.size} valgt:</span>
