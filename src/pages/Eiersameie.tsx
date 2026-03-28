@@ -297,7 +297,12 @@ export default function Eiersameie() {
                         </Badge>
                       )}
                     </TableCell>
-                    <TableCell>{t.er_oppgjor && <Badge className="bg-gray-200 text-gray-700">Oppgjør</Badge>}</TableCell>
+                    <TableCell>
+                      <div className="flex gap-1">
+                        {t.er_oppgjor && <Badge className="bg-gray-200 text-gray-700">Oppgjør</Badge>}
+                        {t.mangler_underlag && <Badge variant="secondary" className="text-xs bg-gray-200 text-gray-600">Mangler underlag</Badge>}
+                      </div>
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
