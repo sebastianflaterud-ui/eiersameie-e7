@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
+import { YearSelect } from '@/components/YearSelect';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
