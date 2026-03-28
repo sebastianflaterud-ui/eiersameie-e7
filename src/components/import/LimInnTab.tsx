@@ -61,7 +61,7 @@ export function LimInnTab({ onParsed }: Props) {
           <Textarea
             value={text}
             onChange={e => setText(e.target.value)}
-            placeholder="Lim inn transaksjoner fra nettbanken her...&#10;&#10;Format: Dato[TAB]Fra/Til[TAB]Kategori[TAB]Beløp"
+            placeholder={"Lim inn transaksjoner fra nettbanken her...\n\nFormat 1: Dato[TAB]Fra/Til[TAB]Kategori[TAB]Beløp\nFormat 2: Kontoutskrift (navn, kategori, beløp+dato per blokk)"}
             className="min-h-[300px] font-mono text-sm"
           />
         </div>
