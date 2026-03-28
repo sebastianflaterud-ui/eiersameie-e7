@@ -437,6 +437,62 @@ export type Database = {
         }
         Relationships: []
       }
+      kalender_hendelser: {
+        Row: {
+          beskrivelse: string | null
+          dato: string
+          enhet_id: string | null
+          fullfort: boolean | null
+          fullfort_dato: string | null
+          gjentakelse: string | null
+          id: string
+          kategori: string
+          opprettet: string | null
+          paaminnelse_dager: number | null
+          prioritet: string | null
+          tittel: string
+          user_id: string
+        }
+        Insert: {
+          beskrivelse?: string | null
+          dato: string
+          enhet_id?: string | null
+          fullfort?: boolean | null
+          fullfort_dato?: string | null
+          gjentakelse?: string | null
+          id?: string
+          kategori: string
+          opprettet?: string | null
+          paaminnelse_dager?: number | null
+          prioritet?: string | null
+          tittel: string
+          user_id: string
+        }
+        Update: {
+          beskrivelse?: string | null
+          dato?: string
+          enhet_id?: string | null
+          fullfort?: boolean | null
+          fullfort_dato?: string | null
+          gjentakelse?: string | null
+          id?: string
+          kategori?: string
+          opprettet?: string | null
+          paaminnelse_dager?: number | null
+          prioritet?: string | null
+          tittel?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "kalender_hendelser_enhet_id_fkey"
+            columns: ["enhet_id"]
+            isOneToOne: false
+            referencedRelation: "enheter"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       klassifiseringsregler: {
         Row: {
           aktiv: boolean | null

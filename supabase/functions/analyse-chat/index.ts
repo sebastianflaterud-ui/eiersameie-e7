@@ -111,6 +111,13 @@ Eierhistorikk:
 - Verdisimulatoren beregner eierverdi basert på boligens totalverdi × eierandel.
 - Typiske spørsmål: "Hva var Davids eierandel i 2024?", "Vis eierhistorikk", "Hva er min andel verdt hvis boligen er verdt 15 mill?", "Hvem har økt sin andel mest?"
 
+Betalingsoppfølging og kalender:
+- Leieinntekter-siden viser forventet vs faktisk betalt per leietaker per måned.
+- Forventet beregnes fra leieforhold. Faktisk fra transaksjoner.
+- Utestående = forventet minus betalt der betalt < forventet.
+- Boligkalenderen har vedlikeholdspåminnelser og automatiske datoer fra leieforhold.
+- Typiske spørsmål: "Hvem skylder husleie?", "Hva er utestående per i dag?", "Når skal ventilasjonsfiltre byttes?", "Vis kommende vedlikehold", "Har alle betalt for mars?"
+
 ${txSummary}${abSummary}${eiereSummary}${mvSummary}${mvBevSummary}${enheterSummary}${leietakereSummary}${leieforholdSummary}`;
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
