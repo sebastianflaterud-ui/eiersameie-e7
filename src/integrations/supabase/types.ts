@@ -184,6 +184,51 @@ export type Database = {
         }
         Relationships: []
       }
+      enheter: {
+        Row: {
+          aktiv: boolean | null
+          areal_kvm: number | null
+          beskrivelse: string | null
+          etasje: string | null
+          fasiliteter: string | null
+          id: string
+          maanedsleie_standard: number | null
+          navn: string
+          opprettet: string | null
+          status: string
+          type: string
+          user_id: string
+        }
+        Insert: {
+          aktiv?: boolean | null
+          areal_kvm?: number | null
+          beskrivelse?: string | null
+          etasje?: string | null
+          fasiliteter?: string | null
+          id?: string
+          maanedsleie_standard?: number | null
+          navn: string
+          opprettet?: string | null
+          status?: string
+          type: string
+          user_id: string
+        }
+        Update: {
+          aktiv?: boolean | null
+          areal_kvm?: number | null
+          beskrivelse?: string | null
+          etasje?: string | null
+          fasiliteter?: string | null
+          id?: string
+          maanedsleie_standard?: number | null
+          navn?: string
+          opprettet?: string | null
+          status?: string
+          type?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       investering_bidrag: {
         Row: {
           betalt_av: string | null
@@ -335,6 +380,114 @@ export type Database = {
           kontonummer?: string
           navn?: string | null
           type?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      leieforhold: {
+        Row: {
+          avtalt_leie: number
+          depositum: number | null
+          depositumskonto: string | null
+          enhet_id: string
+          id: string
+          innflytting: string
+          leiekontrakt_signert: boolean | null
+          leietaker_id: string
+          notater: string | null
+          opprettet: string | null
+          oppsigelse_dato: string | null
+          oppsigelse_grunn: string | null
+          status: string
+          user_id: string
+          utflytting: string | null
+        }
+        Insert: {
+          avtalt_leie: number
+          depositum?: number | null
+          depositumskonto?: string | null
+          enhet_id: string
+          id?: string
+          innflytting: string
+          leiekontrakt_signert?: boolean | null
+          leietaker_id: string
+          notater?: string | null
+          opprettet?: string | null
+          oppsigelse_dato?: string | null
+          oppsigelse_grunn?: string | null
+          status?: string
+          user_id: string
+          utflytting?: string | null
+        }
+        Update: {
+          avtalt_leie?: number
+          depositum?: number | null
+          depositumskonto?: string | null
+          enhet_id?: string
+          id?: string
+          innflytting?: string
+          leiekontrakt_signert?: boolean | null
+          leietaker_id?: string
+          notater?: string | null
+          opprettet?: string | null
+          oppsigelse_dato?: string | null
+          oppsigelse_grunn?: string | null
+          status?: string
+          user_id?: string
+          utflytting?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "leieforhold_enhet_id_fkey"
+            columns: ["enhet_id"]
+            isOneToOne: false
+            referencedRelation: "enheter"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "leieforhold_leietaker_id_fkey"
+            columns: ["leietaker_id"]
+            isOneToOne: false
+            referencedRelation: "leietakere"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      leietakere: {
+        Row: {
+          epost: string | null
+          fodselsdato: string | null
+          id: string
+          naavaerende: boolean | null
+          navn: string
+          notater: string | null
+          opprettet: string | null
+          personnr: string | null
+          telefon: string | null
+          user_id: string
+        }
+        Insert: {
+          epost?: string | null
+          fodselsdato?: string | null
+          id?: string
+          naavaerende?: boolean | null
+          navn: string
+          notater?: string | null
+          opprettet?: string | null
+          personnr?: string | null
+          telefon?: string | null
+          user_id: string
+        }
+        Update: {
+          epost?: string | null
+          fodselsdato?: string | null
+          id?: string
+          naavaerende?: boolean | null
+          navn?: string
+          notater?: string | null
+          opprettet?: string | null
+          personnr?: string | null
+          telefon?: string | null
           user_id?: string
         }
         Relationships: []
