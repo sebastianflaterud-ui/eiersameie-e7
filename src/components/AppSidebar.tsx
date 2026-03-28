@@ -40,7 +40,6 @@ const navItems = [
   { title: 'Import', url: '/import', icon: Upload },
   { title: 'Datavasking', url: '/datavasking', icon: Sparkles },
   { title: 'Enheter', url: '/enheter', icon: DoorOpen },
-  { title: 'Leietakere', url: '/leietakere', icon: Users },
   
   { title: 'Kontrakter', url: '/kontrakter', icon: FileSignature },
   { title: 'Beleggsoversikt', url: '/belegg', icon: CalendarDays },

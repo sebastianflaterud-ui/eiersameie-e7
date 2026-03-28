@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { YearSelect } from '@/components/YearSelect';
+import { LeieforholdTab } from '@/components/leieinntekter/LeieforholdTab';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -292,16 +293,21 @@ export default function Leieinntekter() {
         <YearSelect value={year} onChange={setYear} />
       </div>
 
-      <Tabs defaultValue="aarsoversikt">
+      <Tabs defaultValue="leieforhold">
         <TabsList className="flex-wrap h-auto gap-1">
-          <TabsTrigger value="aarsoversikt">Årsoversikt</TabsTrigger>
-          <TabsTrigger value="maaned">Måned</TabsTrigger>
+          <TabsTrigger value="leieforhold">Leieforhold</TabsTrigger>
           <TabsTrigger value="fakturaer">Fakturaer</TabsTrigger>
           <TabsTrigger value="betalinger">Betalinger</TabsTrigger>
           <TabsTrigger value="kobling">Kobling</TabsTrigger>
-          
+          <TabsTrigger value="maaned">Måned</TabsTrigger>
+          <TabsTrigger value="aarsoversikt">Årsoversikt</TabsTrigger>
           <TabsTrigger value="innstillinger">Innstillinger</TabsTrigger>
         </TabsList>
+
+        {/* ===== LEIEFORHOLD ===== */}
+        <TabsContent value="leieforhold">
+          <LeieforholdTab />
+        </TabsContent>
 
         {/* ===== ÅRSOVERSIKT ===== */}
         <TabsContent value="aarsoversikt" className="space-y-6">
