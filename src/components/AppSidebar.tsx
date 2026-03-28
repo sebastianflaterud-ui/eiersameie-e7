@@ -43,6 +43,7 @@ const navItems = [
   { title: 'Leietakere', url: '/leietakere', icon: Users },
   { title: 'Kontrakter', url: '/kontrakter', icon: FileSignature },
   { title: 'Beleggsoversikt', url: '/belegg', icon: CalendarDays },
+  { title: 'Kalender', url: '/kalender', icon: CalendarDays },
   { title: 'Leieinntekter', url: '/leieinntekter', icon: Home },
   { title: 'Eiersameie E7', url: '/eiersameie', icon: Building },
   { title: 'Eiere', url: '/eiere', icon: Users },

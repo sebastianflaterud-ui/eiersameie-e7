@@ -14,6 +14,7 @@ import Enheter from "./pages/Enheter";
 import LeietakerePage from "./pages/LeietakerePage";
 import Kontrakter from "./pages/Kontrakter";
 import Beleggsoversikt from "./pages/Beleggsoversikt";
+import Kalender from "./pages/Kalender";
 import Leieinntekter from "./pages/Leieinntekter";
 import Eiersameie from "./pages/Eiersameie";
 import Eiere from "./pages/Eiere";
@@ -54,6 +55,7 @@ function ProtectedRoutes() {
         <Route path="/leietakere" element={<LeietakerePage />} />
         <Route path="/kontrakter" element={<Kontrakter />} />
         <Route path="/belegg" element={<Beleggsoversikt />} />
+        <Route path="/kalender" element={<Kalender />} />
         <Route path="/leieinntekter" element={<Leieinntekter />} />
         <Route path="/eiersameie" element={<Eiersameie />} />
         <Route path="/eiere" element={<Eiere />} />
