@@ -47,6 +47,7 @@ export default function Datavasking() {
   const [bilagList, setBilagList] = useState<Bilag[]>([]);
   const [uploading, setUploading] = useState(false);
   const [aiClassifying, setAiClassifying] = useState(false);
+  const [aiProgress, setAiProgress] = useState({ done: 0, total: 0 });
 
   useEffect(() => {
     supabase.from('eiere').select('id, navn').then(({ data }) => { if (data) setEiere(data as Eier[]); });
