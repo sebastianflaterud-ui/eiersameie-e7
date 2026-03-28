@@ -74,14 +74,30 @@ VIKTIG:
 - Sett motpart_egen til normalisert fullt navn fra leietakerlisten
 - For utgifter: gjett leverandør og utgiftstype basert på beskrivelse
 
+BESKRIVELSE_EGEN — Tolk bankbeskrivelsen til en lesbar, kort norsk beskrivelse:
+- "AVIS CAR RENTAL" → "Leiebil"
+- "SAS SCANDINAVIAN" → "Flybillett"
+- "REMA 1000 TANUM" → "Dagligvarer"
+- "CIRCLE K NESODDTAN" → "Drivstoff"
+- "GOOGLE *CLOUD" → "Skytjeneste"
+- "VIPPS *FINN.NO" → "Finn.no-kjøp"
+- "PLANTASJEN VINTER" → "Hage/planter"
+- "JULA NORGE AS" → "Byggevarer"
+- Bruk kort, naturlig norsk. Ikke gjenta firmanavn — beskriv hva det er.
+
+KOSTNADSBESKRIVELSE — For E7-utgifter, beskriv hva kostnaden gjelder (f.eks. "Strøm mars", "Kommunale avgifter Q1", "Terrassebord og skruer").
+
 Svar med JSON-array. Hvert element:
 {
   "index": <1-basert>,
   "kategori": "...",
   "underkategori": "..." eller null,
   "motpart_egen": "..." eller null,
+  "beskrivelse_egen": "..." eller null,
   "inntektstype": "..." eller null,
   "utgiftstype": "..." eller null,
+  "kostnadstype": "..." eller null,
+  "kostnadsbeskrivelse": "..." eller null,
   "leverandor": "..." eller null,
   "leie_for": "..." eller null,
   "leieperiode": "YYYY-MM" eller null,
@@ -118,8 +134,11 @@ Svar med JSON-array. Hvert element:
                       kategori: { type: "string" },
                       underkategori: { type: "string" },
                       motpart_egen: { type: "string" },
+                      beskrivelse_egen: { type: "string", description: "Kort norsk beskrivelse av hva transaksjonen er" },
                       inntektstype: { type: "string" },
                       utgiftstype: { type: "string" },
+                      kostnadstype: { type: "string" },
+                      kostnadsbeskrivelse: { type: "string", description: "For E7-kostnader, hva det gjelder" },
                       leverandor: { type: "string" },
                       leie_for: { type: "string" },
                       leieperiode: { type: "string" },
