@@ -175,6 +175,83 @@ export type Database = {
         }
         Relationships: []
       }
+      investering_bidrag: {
+        Row: {
+          betalt_av: string | null
+          bidrag_belop: number
+          bidrag_prosent: number | null
+          eier_navn: string
+          id: string
+          investering_id: string
+          notater: string | null
+          opprettet: string | null
+          user_id: string
+        }
+        Insert: {
+          betalt_av?: string | null
+          bidrag_belop: number
+          bidrag_prosent?: number | null
+          eier_navn: string
+          id?: string
+          investering_id: string
+          notater?: string | null
+          opprettet?: string | null
+          user_id: string
+        }
+        Update: {
+          betalt_av?: string | null
+          bidrag_belop?: number
+          bidrag_prosent?: number | null
+          eier_navn?: string
+          id?: string
+          investering_id?: string
+          notater?: string | null
+          opprettet?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "investering_bidrag_investering_id_fkey"
+            columns: ["investering_id"]
+            isOneToOne: false
+            referencedRelation: "investeringer"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      investeringer: {
+        Row: {
+          beskrivelse: string | null
+          id: string
+          navn: string
+          opprettet: string | null
+          periode_fra: string | null
+          periode_til: string | null
+          total_investering: number
+          user_id: string
+        }
+        Insert: {
+          beskrivelse?: string | null
+          id?: string
+          navn: string
+          opprettet?: string | null
+          periode_fra?: string | null
+          periode_til?: string | null
+          total_investering: number
+          user_id: string
+        }
+        Update: {
+          beskrivelse?: string | null
+          id?: string
+          navn?: string
+          opprettet?: string | null
+          periode_fra?: string | null
+          periode_til?: string | null
+          total_investering?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
       klassifiseringsregler: {
         Row: {
           aktiv: boolean | null
@@ -252,6 +329,114 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      mellomvaerende: {
+        Row: {
+          aktiv: boolean | null
+          beskrivelse: string | null
+          debitor: string
+          gjeldende_saldo: number
+          id: string
+          innfridd_dato: string | null
+          kreditor: string
+          navn: string
+          oppdatert: string | null
+          opprettet: string | null
+          opprinnelig_belop: number
+          rente_prosent: number | null
+          startdato: string
+          type: string
+          user_id: string
+          valuta: string | null
+        }
+        Insert: {
+          aktiv?: boolean | null
+          beskrivelse?: string | null
+          debitor: string
+          gjeldende_saldo: number
+          id?: string
+          innfridd_dato?: string | null
+          kreditor: string
+          navn: string
+          oppdatert?: string | null
+          opprettet?: string | null
+          opprinnelig_belop: number
+          rente_prosent?: number | null
+          startdato: string
+          type?: string
+          user_id: string
+          valuta?: string | null
+        }
+        Update: {
+          aktiv?: boolean | null
+          beskrivelse?: string | null
+          debitor?: string
+          gjeldende_saldo?: number
+          id?: string
+          innfridd_dato?: string | null
+          kreditor?: string
+          navn?: string
+          oppdatert?: string | null
+          opprettet?: string | null
+          opprinnelig_belop?: number
+          rente_prosent?: number | null
+          startdato?: string
+          type?: string
+          user_id?: string
+          valuta?: string | null
+        }
+        Relationships: []
+      }
+      mellomvaerende_bevegelser: {
+        Row: {
+          belop: number
+          beskrivelse: string | null
+          dato: string
+          id: string
+          mellomvaerende_id: string
+          opprettet: string | null
+          transaksjon_id: string | null
+          type: string
+          user_id: string
+        }
+        Insert: {
+          belop: number
+          beskrivelse?: string | null
+          dato: string
+          id?: string
+          mellomvaerende_id: string
+          opprettet?: string | null
+          transaksjon_id?: string | null
+          type: string
+          user_id: string
+        }
+        Update: {
+          belop?: number
+          beskrivelse?: string | null
+          dato?: string
+          id?: string
+          mellomvaerende_id?: string
+          opprettet?: string | null
+          transaksjon_id?: string | null
+          type?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mellomvaerende_bevegelser_mellomvaerende_id_fkey"
+            columns: ["mellomvaerende_id"]
+            isOneToOne: false
+            referencedRelation: "mellomvaerende"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "mellomvaerende_bevegelser_transaksjon_id_fkey"
+            columns: ["transaksjon_id"]
+            isOneToOne: false
+            referencedRelation: "transaksjoner"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       transaksjoner: {
         Row: {
