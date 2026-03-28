@@ -18,7 +18,7 @@ export default function Eiersameie() {
   const [txs, setTxs] = useState<any[]>([]);
   const [eiere, setEiere] = useState<Eier[]>([]);
   const [selectedEier, setSelectedEier] = useState<string>('alle');
-  const [stats, setStats] = useState({ total: 0, fradrag: 0, ikkeFradrag: 0, inntekter: 0 });
+  const [stats, setStats] = useState({ total: 0, fradrag: 0, ikkeFradrag: 0, inntekter: 0, manglerUnderlagAntall: 0, manglerUnderlagSum: 0 });
   const [chartData, setChartData] = useState<{ name: string; belop: number }[]>([]);
   const [kostnadTyper, setKostnadTyper] = useState<{ type: string; underkategori: string; antall: number; sum: number }[]>([]);
   const [mvData, setMvData] = useState<any[]>([]);
@@ -43,9 +43,11 @@ export default function Eiersameie() {
 
       const utgifter = realTxs.filter(t => t.retning === 'ut');
       const inntekter = realTxs.filter(t => t.retning === 'inn');
+      const manglerUnderlag = utgifter.filter(t => t.mangler_underlag);
+      const manglerSum = manglerUnderlag.reduce((s, t) => s + Number(t.belop), 0);
       const fradrag = utgifter.filter(t => t.fradragsberettiget).reduce((s, t) => s + Number(t.belop), 0);
       const total = utgifter.reduce((s, t) => s + Number(t.belop), 0);
-      setStats({ total, fradrag, ikkeFradrag: total - fradrag, inntekter: inntekter.reduce((s, t) => s + Number(t.belop), 0) });
+      setStats({ total, fradrag, ikkeFradrag: total - fradrag, inntekter: inntekter.reduce((s, t) => s + Number(t.belop), 0), manglerUnderlagAntall: manglerUnderlag.length, manglerUnderlagSum: manglerSum });
 
       const byUk: Record<string, number> = {};
       for (const t of utgifter) { const uk = t.underkategori || 'Annet'; byUk[uk] = (byUk[uk] || 0) + Number(t.belop); }

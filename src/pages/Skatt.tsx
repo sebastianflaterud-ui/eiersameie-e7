@@ -180,7 +180,13 @@ export default function Skatt() {
         </div>
       )}
 
-      {/* Levi special case: no income */}
+      {manglerUnderlagStats.antall > 0 && (
+        <div className="flex items-center gap-2 p-4 bg-gray-50 border border-gray-200 rounded-lg">
+          <AlertTriangle className="h-5 w-5 text-gray-500" />
+          <span className="text-gray-700">{manglerUnderlagStats.antall} kostnader ({formatBelop(manglerUnderlagStats.sum)}) mangler underlag og er ekskludert fra skattemeldingsgrunnlaget.</span>
+        </div>
+      )}
+
       {isLevi && currentEier && (
         <Card>
           <CardContent className="pt-6">
