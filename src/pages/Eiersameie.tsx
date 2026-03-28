@@ -99,7 +99,7 @@ export default function Eiersameie() {
               {eiere.map(e => <SelectItem key={e.id} value={e.navn}>{e.navn}</SelectItem>)}
             </SelectContent>
           </Select>
-          <Input type="number" value={year} onChange={e => setYear(Number(e.target.value))} className="w-[100px]" />
+          <YearSelect value={year} onChange={setYear} />
         </div>
       </div>
 

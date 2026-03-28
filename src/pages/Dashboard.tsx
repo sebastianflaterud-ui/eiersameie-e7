@@ -82,7 +82,7 @@ export default function Dashboard() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">Dashboard</h1>
-        <Input type="number" value={year} onChange={e => setYear(Number(e.target.value))} className="w-[100px]" />
+        <YearSelect value={year} onChange={setYear} />
       </div>
 
       <div className="grid grid-cols-4 gap-4">
