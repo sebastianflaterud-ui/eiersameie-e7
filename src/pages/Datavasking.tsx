@@ -184,8 +184,11 @@ export default function Datavasking() {
         };
         if (r.underkategori) updateData.underkategori = r.underkategori;
         if (r.motpart_egen) updateData.motpart_egen = r.motpart_egen;
+        if (r.beskrivelse_egen) updateData.beskrivelse_egen = r.beskrivelse_egen;
         if (r.inntektstype) updateData.inntektstype = r.inntektstype;
         if (r.utgiftstype) updateData.utgiftstype = r.utgiftstype;
+        if (r.kostnadstype) updateData.kostnadstype = r.kostnadstype;
+        if (r.kostnadsbeskrivelse) updateData.kostnadsbeskrivelse = r.kostnadsbeskrivelse;
         if (r.leverandor) updateData.leverandor = r.leverandor;
         if (r.leie_for) updateData.leie_for = r.leie_for;
         if (r.leieperiode) updateData.leieperiode = r.leieperiode;
