@@ -110,6 +110,7 @@ export default function Transaksjoner() {
   const showFradrag = preset === 'skattemelding' || preset === 'alle';
   const showBilag = preset === 'skattemelding' || preset === 'alle';
   const showOppgjor = preset !== 'skattemelding';
+  const showBetaler = preset === 'utgifter' || preset === 'skattemelding' || preset === 'alle';
 
   return (
     <div className="space-y-4">
@@ -172,6 +173,8 @@ export default function Transaksjoner() {
               {(preset === 'utgifter' || preset === 'alle' || preset === 'skattemelding') && <TableHead>Leverandør</TableHead>}
               {(preset === 'alle' || preset === 'skattemelding') && <TableHead>Underkategori</TableHead>}
               {(preset === 'alle' || preset === 'skattemelding') && <TableHead>Kostnadstype</TableHead>}
+              {showBetaler && <TableHead>Betaler</TableHead>}
+              {showBetaler && <TableHead>Kostnadsbeskr.</TableHead>}
               <TableHead className="text-right">Beløp</TableHead>
               <TableHead>Kategori</TableHead>
               {showOppgjor && <TableHead>Oppgjør</TableHead>}
@@ -193,6 +196,8 @@ export default function Transaksjoner() {
                 {(preset === 'utgifter' || preset === 'alle' || preset === 'skattemelding') && <TableCell className="text-sm">{t.leverandor || '-'}</TableCell>}
                 {(preset === 'alle' || preset === 'skattemelding') && <TableCell className="text-sm">{t.underkategori || '-'}</TableCell>}
                 {(preset === 'alle' || preset === 'skattemelding') && <TableCell className="text-sm">{t.kostnadstype || '-'}</TableCell>}
+                {showBetaler && <TableCell className="text-sm">{(t as any).betaler_eier || '-'}</TableCell>}
+                {showBetaler && <TableCell className="text-sm max-w-[150px] truncate">{(t as any).kostnadsbeskrivelse || '-'}</TableCell>}
                 <TableCell className={`text-right font-mono text-sm whitespace-nowrap ${t.er_oppgjor ? 'text-gray-500' : t.retning === 'inn' ? 'text-green-600' : 'text-red-600'}`}>
                   {t.retning === 'ut' ? '-' : ''}{formatBelop(t.belop)}
                 </TableCell>

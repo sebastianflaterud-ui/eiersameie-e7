@@ -100,6 +100,7 @@ export default function Datavasking() {
       leieperiode: t.leieperiode || '', enhet: t.enhet || '', beskrivelse_egen: t.beskrivelse_egen || '',
       notater: t.notater || '', skatteaar: t.skatteaar || '',
       er_oppgjor: t.er_oppgjor || false, oppgjor_til: t.oppgjor_til || '',
+      betaler_eier: (t as any).betaler_eier || '', kostnadsbeskrivelse: (t as any).kostnadsbeskrivelse || '',
     });
     fetchBilag(t.id);
   };
@@ -116,7 +117,8 @@ export default function Datavasking() {
       notater: detailForm.notater || null, skatteaar: detailForm.skatteaar ? Number(detailForm.skatteaar) : null,
       klassifisering_status: status as any,
       er_oppgjor: detailForm.er_oppgjor, oppgjor_til: detailForm.er_oppgjor ? (detailForm.oppgjor_til || null) : null,
-    }).eq('id', detailItem.id);
+      betaler_eier: detailForm.betaler_eier || null, kostnadsbeskrivelse: detailForm.kostnadsbeskrivelse || null,
+    } as any).eq('id', detailItem.id);
     if (error) { toast.error(error.message); return; }
     toast.success('Lagret');
     const currentIdx = items.findIndex(i => i.id === detailItem.id);
@@ -289,10 +291,29 @@ export default function Datavasking() {
                 </div>
               )}
               {detailItem.retning === 'ut' && !detailForm.er_oppgjor && (
-                <div className="grid grid-cols-3 gap-3 p-3 bg-red-50 rounded-lg border border-red-200">
-                  <div className="space-y-1"><Label>Utgiftstype</Label><Input value={detailForm.utgiftstype} onChange={e => setDetailForm(p => ({ ...p, utgiftstype: e.target.value }))} /></div>
-                  <div className="space-y-1"><Label>Leverandør</Label><Input value={detailForm.leverandor} onChange={e => setDetailForm(p => ({ ...p, leverandor: e.target.value }))} /></div>
-                  <div className="space-y-1"><Label>Kostnadstype</Label><Input value={detailForm.kostnadstype} onChange={e => setDetailForm(p => ({ ...p, kostnadstype: e.target.value }))} /></div>
+                <div className="space-y-3">
+                  <div className="grid grid-cols-3 gap-3 p-3 bg-red-50 rounded-lg border border-red-200">
+                    <div className="space-y-1"><Label>Utgiftstype</Label><Input value={detailForm.utgiftstype} onChange={e => setDetailForm(p => ({ ...p, utgiftstype: e.target.value }))} /></div>
+                    <div className="space-y-1"><Label>Leverandør</Label><Input value={detailForm.leverandor} onChange={e => setDetailForm(p => ({ ...p, leverandor: e.target.value }))} /></div>
+                    <div className="space-y-1"><Label>Kostnadstype</Label><Input value={detailForm.kostnadstype} onChange={e => setDetailForm(p => ({ ...p, kostnadstype: e.target.value }))} /></div>
+                  </div>
+                  {detailForm.kategori === 'Eiersameie E7' && (
+                    <div className="grid grid-cols-2 gap-3 p-3 bg-orange-50 rounded-lg border border-orange-200">
+                      <div className="space-y-1">
+                        <Label>Betaler (hvem la ut)</Label>
+                        <Select value={detailForm.betaler_eier || ''} onValueChange={v => setDetailForm(p => ({ ...p, betaler_eier: v }))}>
+                          <SelectTrigger><SelectValue placeholder="Velg betaler" /></SelectTrigger>
+                          <SelectContent>
+                            {eiere.map(e => <SelectItem key={e.id} value={e.navn}>{e.navn}</SelectItem>)}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-1">
+                        <Label>Kostnadsbeskrivelse</Label>
+                        <Input placeholder="F.eks. Terrassebord og skruer" value={detailForm.kostnadsbeskrivelse} onChange={e => setDetailForm(p => ({ ...p, kostnadsbeskrivelse: e.target.value }))} />
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
 
