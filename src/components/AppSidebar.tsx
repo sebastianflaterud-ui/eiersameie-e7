@@ -107,11 +107,11 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
 
-        {/* Eiendom */}
+        {/* Eiersameie */}
         <SidebarGroup>
-          {!collapsed && <SidebarGroupLabel>Eiendom</SidebarGroupLabel>}
+          {!collapsed && <SidebarGroupLabel>Eiersameie</SidebarGroupLabel>}
           <SidebarGroupContent>
-            <SidebarMenu>{renderItems(eiendomItems)}</SidebarMenu>
+            <SidebarMenu>{renderItems(eiersameieItems)}</SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
 
