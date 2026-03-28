@@ -83,6 +83,98 @@ export type Database = {
         }
         Relationships: []
       }
+      bilag: {
+        Row: {
+          beskrivelse: string | null
+          filnavn: string
+          filstorrelse: number | null
+          filtype: string
+          id: string
+          opprettet: string | null
+          storage_path: string
+          transaksjon_id: string | null
+          user_id: string
+        }
+        Insert: {
+          beskrivelse?: string | null
+          filnavn: string
+          filstorrelse?: number | null
+          filtype: string
+          id?: string
+          opprettet?: string | null
+          storage_path: string
+          transaksjon_id?: string | null
+          user_id: string
+        }
+        Update: {
+          beskrivelse?: string | null
+          filnavn?: string
+          filstorrelse?: number | null
+          filtype?: string
+          id?: string
+          opprettet?: string | null
+          storage_path?: string
+          transaksjon_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bilag_transaksjon_id_fkey"
+            columns: ["transaksjon_id"]
+            isOneToOne: false
+            referencedRelation: "transaksjoner"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      eiere: {
+        Row: {
+          aktiv: boolean | null
+          eierandel_prosent: number
+          gyldig_fra: string | null
+          gyldig_til: string | null
+          id: string
+          inntektsandel_prosent: number
+          kostnadsandel_prosent: number
+          navn: string
+          notater: string | null
+          opprettet: string | null
+          orgnr: string | null
+          type: string
+          user_id: string
+        }
+        Insert: {
+          aktiv?: boolean | null
+          eierandel_prosent: number
+          gyldig_fra?: string | null
+          gyldig_til?: string | null
+          id?: string
+          inntektsandel_prosent: number
+          kostnadsandel_prosent: number
+          navn: string
+          notater?: string | null
+          opprettet?: string | null
+          orgnr?: string | null
+          type: string
+          user_id: string
+        }
+        Update: {
+          aktiv?: boolean | null
+          eierandel_prosent?: number
+          gyldig_fra?: string | null
+          gyldig_til?: string | null
+          id?: string
+          inntektsandel_prosent?: number
+          kostnadsandel_prosent?: number
+          navn?: string
+          notater?: string | null
+          opprettet?: string | null
+          orgnr?: string | null
+          type?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       klassifiseringsregler: {
         Row: {
           aktiv: boolean | null
@@ -172,6 +264,7 @@ export type Database = {
           dato: string
           duplikat_hash: string | null
           enhet: string | null
+          er_oppgjor: boolean | null
           fradragsberettiget: boolean | null
           id: string
           inntektstype: string | null
@@ -188,6 +281,7 @@ export type Database = {
           motpart_egen: string | null
           notater: string | null
           oppdatert: string | null
+          oppgjor_til: string | null
           opprettet: string | null
           original_belop: number | null
           retning: string
@@ -208,6 +302,7 @@ export type Database = {
           dato: string
           duplikat_hash?: string | null
           enhet?: string | null
+          er_oppgjor?: boolean | null
           fradragsberettiget?: boolean | null
           id?: string
           inntektstype?: string | null
@@ -224,6 +319,7 @@ export type Database = {
           motpart_egen?: string | null
           notater?: string | null
           oppdatert?: string | null
+          oppgjor_til?: string | null
           opprettet?: string | null
           original_belop?: number | null
           retning: string
@@ -244,6 +340,7 @@ export type Database = {
           dato?: string
           duplikat_hash?: string | null
           enhet?: string | null
+          er_oppgjor?: boolean | null
           fradragsberettiget?: boolean | null
           id?: string
           inntektstype?: string | null
@@ -260,6 +357,7 @@ export type Database = {
           motpart_egen?: string | null
           notater?: string | null
           oppdatert?: string | null
+          oppgjor_til?: string | null
           opprettet?: string | null
           original_belop?: number | null
           retning?: string
