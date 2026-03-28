@@ -159,51 +159,89 @@ export default function Datavasking() {
     if (detailItem) fetchBilag(detailItem.id);
   };
 
-  const aiClassify = async () => {
-    const toClassify = items.filter(i => i.klassifisering_status !== 'manuell' && i.klassifisering_status !== 'bekreftet');
-    if (toClassify.length === 0) { toast.info('Ingen transaksjoner å klassifisere med AI'); return; }
+  const applyAiResults = async (batch: { id: string }[], results: any[]) => {
+    let updated = 0;
+    for (const r of results) {
+      const tx = batch[r.index - 1];
+      if (!tx) continue;
+      const updateData: Record<string, any> = {
+        kategori: r.kategori,
+        klassifisering_status: 'foreslått',
+      };
+      if (r.underkategori) updateData.underkategori = r.underkategori;
+      if (r.motpart_egen) updateData.motpart_egen = r.motpart_egen;
+      if (r.beskrivelse_egen) updateData.beskrivelse_egen = r.beskrivelse_egen;
+      if (r.inntektstype) updateData.inntektstype = r.inntektstype;
+      if (r.utgiftstype) updateData.utgiftstype = r.utgiftstype;
+      if (r.kostnadstype) updateData.kostnadstype = r.kostnadstype;
+      if (r.kostnadsbeskrivelse) updateData.kostnadsbeskrivelse = r.kostnadsbeskrivelse;
+      if (r.leverandor) updateData.leverandor = r.leverandor;
+      if (r.leie_for) updateData.leie_for = r.leie_for;
+      if (r.leieperiode) updateData.leieperiode = r.leieperiode;
+      if (r.enhet) updateData.enhet = r.enhet;
+      const { error: upErr } = await supabase.from('transaksjoner').update(updateData as any).eq('id', tx.id);
+      if (!upErr) updated++;
+    }
+    return updated;
+  };
 
+  const aiClassify = async (all = false) => {
     setAiClassifying(true);
+    setAiProgress({ done: 0, total: 0 });
+
     try {
-      const batch = toClassify.slice(0, 25).map(t => ({
-        id: t.id, dato: t.dato, belop: t.belop, retning: t.retning,
-        beskrivelse_bank: t.beskrivelse_bank, motpart_bank: t.motpart_bank, konto: t.konto,
-      }));
-
-      const { data, error } = await supabase.functions.invoke('ai-klassifiser', { body: { transaksjoner: batch } });
-      if (error) throw new Error(error.message || 'AI-feil');
-      if (data?.error) throw new Error(data.error);
-
-      const results = data.results || [];
-      let updated = 0;
-      for (const r of results) {
-        const tx = batch[r.index - 1];
-        if (!tx) continue;
-        const updateData: Record<string, any> = {
-          kategori: r.kategori,
-          klassifisering_status: 'foreslått',
-        };
-        if (r.underkategori) updateData.underkategori = r.underkategori;
-        if (r.motpart_egen) updateData.motpart_egen = r.motpart_egen;
-        if (r.beskrivelse_egen) updateData.beskrivelse_egen = r.beskrivelse_egen;
-        if (r.inntektstype) updateData.inntektstype = r.inntektstype;
-        if (r.utgiftstype) updateData.utgiftstype = r.utgiftstype;
-        if (r.kostnadstype) updateData.kostnadstype = r.kostnadstype;
-        if (r.kostnadsbeskrivelse) updateData.kostnadsbeskrivelse = r.kostnadsbeskrivelse;
-        if (r.leverandor) updateData.leverandor = r.leverandor;
-        if (r.leie_for) updateData.leie_for = r.leie_for;
-        if (r.leieperiode) updateData.leieperiode = r.leieperiode;
-        if (r.enhet) updateData.enhet = r.enhet;
-
-        const { error: upErr } = await supabase.from('transaksjoner').update(updateData as any).eq('id', tx.id);
-        if (!upErr) updated++;
+      // Fetch all unclassified transactions if running full batch
+      let allTx: Transaksjon[];
+      if (all) {
+        const { data } = await supabase.from('transaksjoner').select('*')
+          .or('kategori.eq.Uklassifisert,klassifisering_status.eq.foreslått,klassifisering_status.eq.auto')
+          .not('klassifisering_status', 'in', '("manuell","bekreftet")')
+          .order('dato', { ascending: false });
+        allTx = (data || []) as Transaksjon[];
+      } else {
+        allTx = items.filter(i => i.klassifisering_status !== 'manuell' && i.klassifisering_status !== 'bekreftet');
       }
-      toast.success(`AI klassifiserte ${updated} av ${batch.length} transaksjoner`);
+
+      if (allTx.length === 0) { toast.info('Ingen transaksjoner å klassifisere med AI'); setAiClassifying(false); return; }
+
+      const batchSize = 20;
+      const totalBatches = Math.ceil(allTx.length / batchSize);
+      setAiProgress({ done: 0, total: allTx.length });
+      let totalUpdated = 0;
+
+      for (let i = 0; i < totalBatches; i++) {
+        const chunk = allTx.slice(i * batchSize, (i + 1) * batchSize);
+        const batch = chunk.map(t => ({
+          id: t.id, dato: t.dato, belop: t.belop, retning: t.retning,
+          beskrivelse_bank: t.beskrivelse_bank, motpart_bank: t.motpart_bank, konto: t.konto,
+        }));
+
+        try {
+          const { data, error } = await supabase.functions.invoke('ai-klassifiser', { body: { transaksjoner: batch } });
+          if (error) throw error;
+          if (data?.error) throw new Error(data.error);
+          totalUpdated += await applyAiResults(batch, data.results || []);
+        } catch (batchErr: any) {
+          console.error(`Batch ${i + 1} feilet:`, batchErr);
+          if (batchErr.message?.includes('429') || batchErr.message?.includes('mange')) {
+            toast.error('Rate limit nådd — venter 10 sekunder...');
+            await new Promise(r => setTimeout(r, 10000));
+            i--; // retry this batch
+            continue;
+          }
+        }
+        setAiProgress({ done: Math.min((i + 1) * batchSize, allTx.length), total: allTx.length });
+        // Small delay between batches to avoid rate limits
+        if (i < totalBatches - 1) await new Promise(r => setTimeout(r, 1500));
+      }
+
+      toast.success(`AI klassifiserte ${totalUpdated} av ${allTx.length} transaksjoner`);
       fetchItems(); fetchStats();
     } catch (e: any) {
       toast.error(e.message || 'AI-klassifisering feilet');
     } finally {
       setAiClassifying(false);
+      setAiProgress({ done: 0, total: 0 });
     }
   };
 
