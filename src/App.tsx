@@ -10,6 +10,9 @@ import Dashboard from "./pages/Dashboard";
 import Transaksjoner from "./pages/Transaksjoner";
 import Import from "./pages/Import";
 import Datavasking from "./pages/Datavasking";
+import Enheter from "./pages/Enheter";
+import LeietakerePage from "./pages/LeietakerePage";
+import Beleggsoversikt from "./pages/Beleggsoversikt";
 import Leieinntekter from "./pages/Leieinntekter";
 import Eiersameie from "./pages/Eiersameie";
 import Eiere from "./pages/Eiere";
@@ -46,6 +49,9 @@ function ProtectedRoutes() {
         <Route path="/transaksjoner" element={<Transaksjoner />} />
         <Route path="/import" element={<Import />} />
         <Route path="/datavasking" element={<Datavasking />} />
+        <Route path="/enheter" element={<Enheter />} />
+        <Route path="/leietakere" element={<LeietakerePage />} />
+        <Route path="/belegg" element={<Beleggsoversikt />} />
         <Route path="/leieinntekter" element={<Leieinntekter />} />
         <Route path="/eiersameie" element={<Eiersameie />} />
         <Route path="/eiere" element={<Eiere />} />

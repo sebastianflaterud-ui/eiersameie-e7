@@ -37,6 +37,9 @@ serve(async (req) => {
     const { data: eiereData } = await supabase.from("eiere").select("*").eq("user_id", user.id);
     const { data: mvDataRows } = await supabase.from("mellomvaerende").select("*").eq("user_id", user.id);
     const { data: mvBevData } = await supabase.from("mellomvaerende_bevegelser").select("*").eq("user_id", user.id).order("dato", { ascending: false }).limit(100);
+    const { data: enheterData } = await supabase.from("enheter").select("*").eq("user_id", user.id);
+    const { data: leietakereData } = await supabase.from("leietakere").select("*").eq("user_id", user.id);
+    const { data: leieforholdData } = await supabase.from("leieforhold").select("*").eq("user_id", user.id);
 
     const txSummary = txData && txData.length > 0
       ? `Transaksjonsdata (${txData.length} rader):\n${JSON.stringify(txData.slice(0, 200), null, 0)}`
@@ -45,6 +48,9 @@ serve(async (req) => {
     const eiereSummary = eiereData && eiereData.length > 0 ? `\n\nEiere:\n${JSON.stringify(eiereData, null, 0)}` : "";
     const mvSummary = mvDataRows && mvDataRows.length > 0 ? `\n\nMellomværende:\n${JSON.stringify(mvDataRows, null, 0)}` : "";
     const mvBevSummary = mvBevData && mvBevData.length > 0 ? `\n\nMellomværende bevegelser (siste 100):\n${JSON.stringify(mvBevData, null, 0)}` : "";
+    const enheterSummary = enheterData && enheterData.length > 0 ? `\n\nEnheter:\n${JSON.stringify(enheterData, null, 0)}` : "";
+    const leietakereSummary = leietakereData && leietakereData.length > 0 ? `\n\nLeietakere:\n${JSON.stringify(leietakereData, null, 0)}` : "";
+    const leieforholdSummary = leieforholdData && leieforholdData.length > 0 ? `\n\nLeieforhold:\n${JSON.stringify(leieforholdData, null, 0)}` : "";
 
     const systemPrompt = `Du er en finansanalytiker som hjelper en norsk utleier med å analysere transaksjonsdata.
 Svar alltid på norsk. Bruk norsk tallformat (38.265,00 kr). Datoformat DD.MM.YY.
@@ -87,10 +93,17 @@ Tilleggskontekst mellomværende:
 - Data finnes i mellomvaerende og mellomvaerende_bevegelser tabellene.
 - Typiske spørsmål: "Hvor mye skylder David meg?", "Når er Motivus-lånet nedbetalt?", "Vis nedbetalingshistorikk for David", "Hva er total utestående?"
 
+Tilleggskontekst enheter og leietakere:
+- E7 har seks utleieenheter: Hybel 1, Hybel 2, Rom 1, Rom 2, Rom 3, Rom 4.
+- Boligen omtales som enebolig med 2 hybler.
+- Leietakere flytter inn og ut jevnlig. Belegg varierer per måned.
+- Data om enheter, leietakere og leieforhold finnes i enheter, leietakere og leieforhold tabellene.
+- Typiske spørsmål: "Hvem bor i Hybel 1?", "Vis belegg siste 6 måneder", "Hvilke enheter er ledige?", "Hva er forventet inntekt neste måned?", "Vis betalingshistorikk for Camilla", "Hvor lenge har Morten bodd her?"
+
 For skattemeldingen: hver eier rapporterer kun sin andel. Netto = (brutto inntekt × inntektsandel) minus (brutto fradrag × kostnadsandel).
 Kun "Drift og vedlikehold" er fradragsberettiget. "Påkost" legges til inngangsverdi (ikke fradrag).
 
-${txSummary}${abSummary}${eiereSummary}${mvSummary}${mvBevSummary}`;
+${txSummary}${abSummary}${eiereSummary}${mvSummary}${mvBevSummary}${enheterSummary}${leietakereSummary}${leieforholdSummary}`;
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");

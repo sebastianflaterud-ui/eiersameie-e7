@@ -14,6 +14,8 @@ import {
   Users,
   Handshake,
   Hammer,
+  DoorOpen,
+  CalendarDays,
 } from 'lucide-react';
 import { NavLink } from '@/components/NavLink';
 import { useLocation } from 'react-router-dom';
@@ -36,6 +38,9 @@ const navItems = [
   { title: 'Transaksjoner', url: '/transaksjoner', icon: List },
   { title: 'Import', url: '/import', icon: Upload },
   { title: 'Datavasking', url: '/datavasking', icon: Sparkles },
+  { title: 'Enheter', url: '/enheter', icon: DoorOpen },
+  { title: 'Leietakere', url: '/leietakere', icon: Users },
+  { title: 'Beleggsoversikt', url: '/belegg', icon: CalendarDays },
   { title: 'Leieinntekter', url: '/leieinntekter', icon: Home },
   { title: 'Eiersameie E7', url: '/eiersameie', icon: Building },
   { title: 'Eiere', url: '/eiere', icon: Users },
