@@ -11,6 +11,7 @@ import Transaksjoner from "./pages/Transaksjoner";
 import Import from "./pages/Import";
 import Datavasking from "./pages/Datavasking";
 import Enheter from "./pages/Enheter";
+import LeietakerePage from "./pages/LeietakerePage";
 
 import Kontrakter from "./pages/Kontrakter";
 import Beleggsoversikt from "./pages/Beleggsoversikt";
