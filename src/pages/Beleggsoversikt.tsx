@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { YearSelect } from '@/components/YearSelect';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -85,7 +86,7 @@ export default function Beleggsoversikt() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">Beleggsoversikt</h1>
-        <Input type="number" value={year} onChange={e => setYear(Number(e.target.value))} className="w-[100px]" />
+        <YearSelect value={year} onChange={setYear} />
       </div>
 
       <div className="border rounded-lg overflow-auto">
