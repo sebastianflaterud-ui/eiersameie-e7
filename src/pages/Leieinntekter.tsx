@@ -299,7 +299,7 @@ export default function Leieinntekter() {
           <TabsTrigger value="fakturaer">Fakturaer</TabsTrigger>
           <TabsTrigger value="betalinger">Betalinger</TabsTrigger>
           <TabsTrigger value="kobling">Kobling</TabsTrigger>
-          <TabsTrigger value="leieforhold">Leieforhold</TabsTrigger>
+          
           <TabsTrigger value="innstillinger">Innstillinger</TabsTrigger>
         </TabsList>
 
@@ -579,31 +579,6 @@ export default function Leieinntekter() {
           )}
         </TabsContent>
 
-        {/* ===== LEIEFORHOLD ===== */}
-        <TabsContent value="leieforhold" className="space-y-4">
-          <div className="border rounded-lg overflow-auto">
-            <Table>
-              <TableHeader><TableRow><TableHead>Leietaker</TableHead><TableHead>Enhet</TableHead><TableHead>Innflytting</TableHead><TableHead>Utflytting</TableHead><TableHead className="text-right">Leie</TableHead><TableHead>Forfall</TableHead><TableHead>Status</TableHead></TableRow></TableHeader>
-              <TableBody>
-                {leieforhold.map(lf => {
-                  const lt = leietakere.find(l => l.id === lf.leietaker_id);
-                  const en = enheter.find(e => e.id === lf.enhet_id);
-                  return (
-                    <TableRow key={lf.id}>
-                      <TableCell className="font-medium">{lt?.navn || '—'}</TableCell>
-                      <TableCell>{en?.navn || '—'}</TableCell>
-                      <TableCell className="font-mono text-xs">{formatDato(lf.innflytting)}</TableCell>
-                      <TableCell className="font-mono text-xs">{lf.utflytting ? formatDato(lf.utflytting) : '—'}</TableCell>
-                      <TableCell className="text-right font-mono">{formatBelop(lf.avtalt_leie)}</TableCell>
-                      <TableCell>{lf.forfall_dag}.</TableCell>
-                      <TableCell><Badge variant="outline" className={lf.status === 'aktiv' ? 'bg-green-100 text-green-700' : 'bg-muted text-muted-foreground'}>{lf.status}</Badge></TableCell>
-                    </TableRow>
-                  );
-                })}
-              </TableBody>
-            </Table>
-          </div>
-        </TabsContent>
 
         {/* ===== INNSTILLINGER ===== */}
         <TabsContent value="innstillinger" className="space-y-6">
