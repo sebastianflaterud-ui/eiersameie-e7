@@ -898,6 +898,7 @@ export type Database = {
           belop: number
           beskrivelse_bank: string
           beskrivelse_egen: string | null
+          betaler_eier: string | null
           betalt_av: string | null
           bokforingsdato: string | null
           dato: string
@@ -912,6 +913,7 @@ export type Database = {
           kilde: string
           klassifisering_status: string | null
           konto: string | null
+          kostnadsbeskrivelse: string | null
           kostnadstype: string | null
           leie_for: string | null
           leieperiode: string | null
@@ -936,6 +938,7 @@ export type Database = {
           belop: number
           beskrivelse_bank: string
           beskrivelse_egen?: string | null
+          betaler_eier?: string | null
           betalt_av?: string | null
           bokforingsdato?: string | null
           dato: string
@@ -950,6 +953,7 @@ export type Database = {
           kilde: string
           klassifisering_status?: string | null
           konto?: string | null
+          kostnadsbeskrivelse?: string | null
           kostnadstype?: string | null
           leie_for?: string | null
           leieperiode?: string | null
@@ -974,6 +978,7 @@ export type Database = {
           belop?: number
           beskrivelse_bank?: string
           beskrivelse_egen?: string | null
+          betaler_eier?: string | null
           betalt_av?: string | null
           bokforingsdato?: string | null
           dato?: string
@@ -988,6 +993,7 @@ export type Database = {
           kilde?: string
           klassifisering_status?: string | null
           konto?: string | null
+          kostnadsbeskrivelse?: string | null
           kostnadstype?: string | null
           leie_for?: string | null
           leieperiode?: string | null
