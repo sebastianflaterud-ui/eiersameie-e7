@@ -25,7 +25,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       if (session?.user) {
-        supabase.rpc('seed_user_data', { p_user_id: session.user.id }).catch(() => {});
+        try { await supabase.rpc('seed_user_data', { p_user_id: session.user.id }); } catch {}
       }
       setLoading(false);
     }).catch(() => {
