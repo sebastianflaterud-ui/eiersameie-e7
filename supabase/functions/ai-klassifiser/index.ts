@@ -74,6 +74,12 @@ VIKTIG:
 - Sett motpart_egen til normalisert fullt navn fra leietakerlisten
 - For utgifter: gjett leverandør og utgiftstype basert på beskrivelse
 
+MOTPARTSNORMALISERING — Sett ALLTID motpart_egen til et normalisert, lesbart navn:
+- Bankbeskrivelser forkorter navn. Bruk leietakerlisten for fuzzy-match.
+- For bedrifter: bruk vanlig skrivemåte. "REMA 1000 TANUM" → "Rema 1000". "CIRCLE K NESODDTAN" → "Circle K". "APPLE.COM/BILL" → "Apple".
+- For privatpersoner som ikke er leietakere: gjett fullt navn fra motpart_bank. "PERS HANSEN" → "Pers Hansen".
+- Fjern stedsnavn, filial-koder og store bokstaver. Gjør det pent og lesbart.
+
 BESKRIVELSE_EGEN — Tolk bankbeskrivelsen til en lesbar, kort norsk beskrivelse:
 - "AVIS CAR RENTAL" → "Leiebil"
 - "SAS SCANDINAVIAN" → "Flybillett"

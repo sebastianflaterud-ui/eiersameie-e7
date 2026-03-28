@@ -47,6 +47,7 @@ export default function Datavasking() {
   const [bilagList, setBilagList] = useState<Bilag[]>([]);
   const [uploading, setUploading] = useState(false);
   const [aiClassifying, setAiClassifying] = useState(false);
+  const [aiProgress, setAiProgress] = useState({ done: 0, total: 0 });
 
   useEffect(() => {
     supabase.from('eiere').select('id, navn').then(({ data }) => { if (data) setEiere(data as Eier[]); });
@@ -158,51 +159,89 @@ export default function Datavasking() {
     if (detailItem) fetchBilag(detailItem.id);
   };
 
-  const aiClassify = async () => {
-    const toClassify = items.filter(i => i.klassifisering_status !== 'manuell' && i.klassifisering_status !== 'bekreftet');
-    if (toClassify.length === 0) { toast.info('Ingen transaksjoner å klassifisere med AI'); return; }
+  const applyAiResults = async (batch: { id: string }[], results: any[]) => {
+    let updated = 0;
+    for (const r of results) {
+      const tx = batch[r.index - 1];
+      if (!tx) continue;
+      const updateData: Record<string, any> = {
+        kategori: r.kategori,
+        klassifisering_status: 'foreslått',
+      };
+      if (r.underkategori) updateData.underkategori = r.underkategori;
+      if (r.motpart_egen) updateData.motpart_egen = r.motpart_egen;
+      if (r.beskrivelse_egen) updateData.beskrivelse_egen = r.beskrivelse_egen;
+      if (r.inntektstype) updateData.inntektstype = r.inntektstype;
+      if (r.utgiftstype) updateData.utgiftstype = r.utgiftstype;
+      if (r.kostnadstype) updateData.kostnadstype = r.kostnadstype;
+      if (r.kostnadsbeskrivelse) updateData.kostnadsbeskrivelse = r.kostnadsbeskrivelse;
+      if (r.leverandor) updateData.leverandor = r.leverandor;
+      if (r.leie_for) updateData.leie_for = r.leie_for;
+      if (r.leieperiode) updateData.leieperiode = r.leieperiode;
+      if (r.enhet) updateData.enhet = r.enhet;
+      const { error: upErr } = await supabase.from('transaksjoner').update(updateData as any).eq('id', tx.id);
+      if (!upErr) updated++;
+    }
+    return updated;
+  };
 
+  const aiClassify = async (all = false) => {
     setAiClassifying(true);
+    setAiProgress({ done: 0, total: 0 });
+
     try {
-      const batch = toClassify.slice(0, 25).map(t => ({
-        id: t.id, dato: t.dato, belop: t.belop, retning: t.retning,
-        beskrivelse_bank: t.beskrivelse_bank, motpart_bank: t.motpart_bank, konto: t.konto,
-      }));
-
-      const { data, error } = await supabase.functions.invoke('ai-klassifiser', { body: { transaksjoner: batch } });
-      if (error) throw new Error(error.message || 'AI-feil');
-      if (data?.error) throw new Error(data.error);
-
-      const results = data.results || [];
-      let updated = 0;
-      for (const r of results) {
-        const tx = batch[r.index - 1];
-        if (!tx) continue;
-        const updateData: Record<string, any> = {
-          kategori: r.kategori,
-          klassifisering_status: 'foreslått',
-        };
-        if (r.underkategori) updateData.underkategori = r.underkategori;
-        if (r.motpart_egen) updateData.motpart_egen = r.motpart_egen;
-        if (r.beskrivelse_egen) updateData.beskrivelse_egen = r.beskrivelse_egen;
-        if (r.inntektstype) updateData.inntektstype = r.inntektstype;
-        if (r.utgiftstype) updateData.utgiftstype = r.utgiftstype;
-        if (r.kostnadstype) updateData.kostnadstype = r.kostnadstype;
-        if (r.kostnadsbeskrivelse) updateData.kostnadsbeskrivelse = r.kostnadsbeskrivelse;
-        if (r.leverandor) updateData.leverandor = r.leverandor;
-        if (r.leie_for) updateData.leie_for = r.leie_for;
-        if (r.leieperiode) updateData.leieperiode = r.leieperiode;
-        if (r.enhet) updateData.enhet = r.enhet;
-
-        const { error: upErr } = await supabase.from('transaksjoner').update(updateData as any).eq('id', tx.id);
-        if (!upErr) updated++;
+      // Fetch all unclassified transactions if running full batch
+      let allTx: Transaksjon[];
+      if (all) {
+        const { data } = await supabase.from('transaksjoner').select('*')
+          .or('kategori.eq.Uklassifisert,klassifisering_status.eq.foreslått,klassifisering_status.eq.auto')
+          .not('klassifisering_status', 'in', '("manuell","bekreftet")')
+          .order('dato', { ascending: false });
+        allTx = (data || []) as Transaksjon[];
+      } else {
+        allTx = items.filter(i => i.klassifisering_status !== 'manuell' && i.klassifisering_status !== 'bekreftet');
       }
-      toast.success(`AI klassifiserte ${updated} av ${batch.length} transaksjoner`);
+
+      if (allTx.length === 0) { toast.info('Ingen transaksjoner å klassifisere med AI'); setAiClassifying(false); return; }
+
+      const batchSize = 20;
+      const totalBatches = Math.ceil(allTx.length / batchSize);
+      setAiProgress({ done: 0, total: allTx.length });
+      let totalUpdated = 0;
+
+      for (let i = 0; i < totalBatches; i++) {
+        const chunk = allTx.slice(i * batchSize, (i + 1) * batchSize);
+        const batch = chunk.map(t => ({
+          id: t.id, dato: t.dato, belop: t.belop, retning: t.retning,
+          beskrivelse_bank: t.beskrivelse_bank, motpart_bank: t.motpart_bank, konto: t.konto,
+        }));
+
+        try {
+          const { data, error } = await supabase.functions.invoke('ai-klassifiser', { body: { transaksjoner: batch } });
+          if (error) throw error;
+          if (data?.error) throw new Error(data.error);
+          totalUpdated += await applyAiResults(batch, data.results || []);
+        } catch (batchErr: any) {
+          console.error(`Batch ${i + 1} feilet:`, batchErr);
+          if (batchErr.message?.includes('429') || batchErr.message?.includes('mange')) {
+            toast.error('Rate limit nådd — venter 10 sekunder...');
+            await new Promise(r => setTimeout(r, 10000));
+            i--; // retry this batch
+            continue;
+          }
+        }
+        setAiProgress({ done: Math.min((i + 1) * batchSize, allTx.length), total: allTx.length });
+        // Small delay between batches to avoid rate limits
+        if (i < totalBatches - 1) await new Promise(r => setTimeout(r, 1500));
+      }
+
+      toast.success(`AI klassifiserte ${totalUpdated} av ${allTx.length} transaksjoner`);
       fetchItems(); fetchStats();
     } catch (e: any) {
       toast.error(e.message || 'AI-klassifisering feilet');
     } finally {
       setAiClassifying(false);
+      setAiProgress({ done: 0, total: 0 });
     }
   };
 
@@ -219,6 +258,15 @@ export default function Datavasking() {
         <Card><CardContent className="pt-4"><div className="text-2xl font-bold text-blue-600">{stats.foreslått}</div><div className="text-sm text-muted-foreground">Foreslått</div></CardContent></Card>
       </div>
       <Progress value={pct} className="h-2" />
+      {aiClassifying && aiProgress.total > 0 && (
+        <div className="space-y-1">
+          <Progress value={Math.round((aiProgress.done / aiProgress.total) * 100)} className="h-2" />
+          <p className="text-sm text-muted-foreground">
+            <Loader2 className="h-3 w-3 inline animate-spin mr-1" />
+            AI klassifiserer: {aiProgress.done} av {aiProgress.total} transaksjoner...
+          </p>
+        </div>
+      )}
       <p className="text-sm text-muted-foreground">{pct}% klassifisert</p>
 
       <div className="flex items-center gap-2 flex-wrap">
@@ -231,9 +279,13 @@ export default function Datavasking() {
             <SelectItem value="auto">Kun autoklassifiserte</SelectItem>
           </SelectContent>
         </Select>
-        <Button variant="outline" onClick={aiClassify} disabled={aiClassifying}>
+        <Button variant="outline" onClick={() => aiClassify(false)} disabled={aiClassifying}>
           {aiClassifying ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Sparkles className="h-4 w-4 mr-1" />}
-          {aiClassifying ? 'Klassifiserer...' : 'AI-klassifiser'}
+          {aiClassifying ? `${aiProgress.done}/${aiProgress.total}` : 'AI-klassifiser side'}
+        </Button>
+        <Button variant="outline" onClick={() => aiClassify(true)} disabled={aiClassifying}>
+          <Sparkles className="h-4 w-4 mr-1" />
+          AI-klassifiser alle
         </Button>
         {selected.size > 0 && (
           <div className="flex gap-1 ml-4">
