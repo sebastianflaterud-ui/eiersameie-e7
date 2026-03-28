@@ -121,7 +121,7 @@ export default function Datavasking() {
       er_oppgjor: detailForm.er_oppgjor, oppgjor_til: detailForm.er_oppgjor ? (detailForm.oppgjor_til || null) : null,
       betaler_eier: detailForm.betaler_eier || null, kostnadsbeskrivelse: detailForm.kostnadsbeskrivelse || null,
       mangler_underlag: detailForm.mangler_underlag || false,
-      fradragsberettiget: detailForm.mangler_underlag ? false : undefined,
+      // fradragsberettiget is handled by DB trigger based on mangler_underlag + kategori
     } as any).eq('id', detailItem.id);
     if (error) { toast.error(error.message); return; }
     toast.success('Lagret');

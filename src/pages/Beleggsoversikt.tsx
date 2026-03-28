@@ -81,68 +81,6 @@ export default function Beleggsoversikt() {
   const avgOccPct = utleieEnheter.length > 0 ? (avgOccupancy / utleieEnheter.length) * 100 : 0;
   const ledigeEnhetsmnd = occupiedPerMonth.reduce((s, v) => s + (utleieEnheter.length - v), 0);
 
-  const renderBoenhetSection = (boenhet: string) => {
-    const boEnheter = enheter.filter(e => e.boenhet === boenhet);
-    const utleie = boEnheter.filter(e => !e.disponert_av);
-    const eierEnheter = boEnheter.filter(e => !!e.disponert_av);
-
-    const boenhetExpected = Array.from({ length: 12 }, (_, i) => {
-      const m = i + 1;
-      return utleie.reduce((s, e) => {
-        const occ = getOccupant(e.id, m);
-        return s + (occ ? occ.leie : 0);
-      }, 0);
-    });
-
-    return (
-      <div key={boenhet} className="space-y-2">
-        <h3 className="font-semibold text-sm text-muted-foreground">{boenhet}</h3>
-        {utleie.map(e => (
-          <TableRow key={e.id}>
-            <TableCell className="sticky left-0 bg-background font-medium">
-              {e.navn} {e.etasje && <span className="text-xs text-muted-foreground">({e.etasje})</span>}
-            </TableCell>
-            {Array.from({ length: 12 }, (_, i) => {
-              const occ = getOccupant(e.id, i + 1);
-              const firstName = occ?.leietaker?.navn?.split(' ')[0] || '';
-              return (
-                <TableCell key={i} className={`text-center text-xs ${occ ? 'bg-green-50 text-green-700' : 'bg-muted/30 text-muted-foreground'}`}>
-                  {occ ? (
-                    <Tooltip>
-                      <TooltipTrigger asChild><span className="cursor-default">{firstName}</span></TooltipTrigger>
-                      <TooltipContent>
-                        <p>{occ.leietaker?.navn}</p>
-                        <p className="font-mono">{formatBelop(occ.leie)}/mnd</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  ) : '-'}
-                </TableCell>
-              );
-            })}
-          </TableRow>
-        ))}
-        {eierEnheter.map(e => (
-          <TableRow key={e.id} className="bg-blue-50/50">
-            <TableCell className="sticky left-0 bg-blue-50/50 font-medium text-blue-700">
-              {e.navn} {e.etasje && <span className="text-xs">({e.etasje})</span>}
-            </TableCell>
-            {Array.from({ length: 12 }, (_, i) => (
-              <TableCell key={i} className="text-center text-xs text-blue-600 bg-blue-50/50">
-                {e.disponert_av?.split(' ')[0]}
-              </TableCell>
-            ))}
-          </TableRow>
-        ))}
-        <TableRow className="font-medium text-xs">
-          <TableCell className="sticky left-0 bg-background text-muted-foreground">↳ Forventet</TableCell>
-          {boenhetExpected.map((v, i) => (
-            <TableCell key={i} className="text-center font-mono">{v > 0 ? formatBelop(v) : '-'}</TableCell>
-          ))}
-        </TableRow>
-      </div>
-    );
-  };
-
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
