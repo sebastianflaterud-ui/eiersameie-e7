@@ -158,6 +158,51 @@ export default function Datavasking() {
     if (detailItem) fetchBilag(detailItem.id);
   };
 
+  const aiClassify = async () => {
+    const toClassify = items.filter(i => i.klassifisering_status !== 'manuell' && i.klassifisering_status !== 'bekreftet');
+    if (toClassify.length === 0) { toast.info('Ingen transaksjoner å klassifisere med AI'); return; }
+
+    setAiClassifying(true);
+    try {
+      const batch = toClassify.slice(0, 25).map(t => ({
+        id: t.id, dato: t.dato, belop: t.belop, retning: t.retning,
+        beskrivelse_bank: t.beskrivelse_bank, motpart_bank: t.motpart_bank, konto: t.konto,
+      }));
+
+      const { data, error } = await supabase.functions.invoke('ai-klassifiser', { body: { transaksjoner: batch } });
+      if (error) throw new Error(error.message || 'AI-feil');
+      if (data?.error) throw new Error(data.error);
+
+      const results = data.results || [];
+      let updated = 0;
+      for (const r of results) {
+        const tx = batch[r.index - 1];
+        if (!tx) continue;
+        const updateData: Record<string, any> = {
+          kategori: r.kategori,
+          klassifisering_status: 'foreslått',
+        };
+        if (r.underkategori) updateData.underkategori = r.underkategori;
+        if (r.motpart_egen) updateData.motpart_egen = r.motpart_egen;
+        if (r.inntektstype) updateData.inntektstype = r.inntektstype;
+        if (r.utgiftstype) updateData.utgiftstype = r.utgiftstype;
+        if (r.leverandor) updateData.leverandor = r.leverandor;
+        if (r.leie_for) updateData.leie_for = r.leie_for;
+        if (r.leieperiode) updateData.leieperiode = r.leieperiode;
+        if (r.enhet) updateData.enhet = r.enhet;
+
+        const { error: upErr } = await supabase.from('transaksjoner').update(updateData as any).eq('id', tx.id);
+        if (!upErr) updated++;
+      }
+      toast.success(`AI klassifiserte ${updated} av ${batch.length} transaksjoner`);
+      fetchItems(); fetchStats();
+    } catch (e: any) {
+      toast.error(e.message || 'AI-klassifisering feilet');
+    } finally {
+      setAiClassifying(false);
+    }
+  };
+
   const pct = stats.total > 0 ? Math.round((stats.klassifisert / stats.total) * 100) : 0;
 
   return (
