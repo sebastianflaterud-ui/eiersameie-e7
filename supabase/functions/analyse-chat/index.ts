@@ -35,12 +35,16 @@ serve(async (req) => {
     const { data: txData } = await txQuery;
     const { data: abData } = await supabase.from("abonnementer").select("*").eq("user_id", user.id);
     const { data: eiereData } = await supabase.from("eiere").select("*").eq("user_id", user.id);
+    const { data: mvDataRows } = await supabase.from("mellomvaerende").select("*").eq("user_id", user.id);
+    const { data: mvBevData } = await supabase.from("mellomvaerende_bevegelser").select("*").eq("user_id", user.id).order("dato", { ascending: false }).limit(100);
 
     const txSummary = txData && txData.length > 0
       ? `Transaksjonsdata (${txData.length} rader):\n${JSON.stringify(txData.slice(0, 200), null, 0)}`
       : "Ingen transaksjoner funnet.";
     const abSummary = abData && abData.length > 0 ? `\n\nAbonnementer (${abData.length}):\n${JSON.stringify(abData, null, 0)}` : "";
     const eiereSummary = eiereData && eiereData.length > 0 ? `\n\nEiere:\n${JSON.stringify(eiereData, null, 0)}` : "";
+    const mvSummary = mvDataRows && mvDataRows.length > 0 ? `\n\nMellomværende:\n${JSON.stringify(mvDataRows, null, 0)}` : "";
+    const mvBevSummary = mvBevData && mvBevData.length > 0 ? `\n\nMellomværende bevegelser (siste 100):\n${JSON.stringify(mvBevData, null, 0)}` : "";
 
     const systemPrompt = `Du er en finansanalytiker som hjelper en norsk utleier med å analysere transaksjonsdata.
 Svar alltid på norsk. Bruk norsk tallformat (38.265,00 kr). Datoformat DD.MM.YY.
@@ -62,7 +66,16 @@ Kontekst:
 - Når bruker spør om "min" andel, bruk Sebastian Flåteruds andeler.
 - Når bruker spør om skattemeldingsgrunnlag, vis alltid brutto OG eierens andel.
 
-${txSummary}${abSummary}${eiereSummary}`;
+Tilleggskontekst mellomværende:
+- Sebastian har to aktive lån der han er kreditor:
+  1. Motivus AS skylder Sebastian for utlegg ved investering i E7. Nedbetales ved at Sebastian beholder Motivus sin leieandel.
+  2. David Lange-Nielsen skylder Sebastian for kjøp av økt eierandel. Nedbetales ved at Sebastian beholder Davids leieandel.
+- Begge lånene nedbetales automatisk gjennom tilbakeholdte leieinntekter.
+- Når et lån er innfridd begynner debitor å motta sin leieandel.
+- Data finnes i mellomvaerende og mellomvaerende_bevegelser tabellene.
+- Typiske spørsmål: "Hvor mye skylder David meg?", "Når er Motivus-lånet nedbetalt?", "Vis nedbetalingshistorikk for David", "Hva er total utestående?"
+
+${txSummary}${abSummary}${eiereSummary}${mvSummary}${mvBevSummary}`;
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");

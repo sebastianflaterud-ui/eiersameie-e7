@@ -7,10 +7,13 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge';
 import { formatBelop, formatDato } from '@/lib/format';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { useNavigate } from 'react-router-dom';
+import { Handshake } from 'lucide-react';
 
 interface Eier { id: string; navn: string; inntektsandel_prosent: number; kostnadsandel_prosent: number; aktiv: boolean | null; }
 
 export default function Eiersameie() {
+  const navigate = useNavigate();
   const [year, setYear] = useState(new Date().getFullYear());
   const [txs, setTxs] = useState<any[]>([]);
   const [eiere, setEiere] = useState<Eier[]>([]);
@@ -18,9 +21,12 @@ export default function Eiersameie() {
   const [stats, setStats] = useState({ total: 0, fradrag: 0, ikkeFradrag: 0, inntekter: 0 });
   const [chartData, setChartData] = useState<{ name: string; belop: number }[]>([]);
   const [kostnadTyper, setKostnadTyper] = useState<{ type: string; underkategori: string; antall: number; sum: number }[]>([]);
+  const [mvData, setMvData] = useState<any[]>([]);
 
   useEffect(() => {
     supabase.from('eiere').select('*').eq('aktiv', true).then(({ data }) => { if (data) setEiere(data as Eier[]); });
+    supabase.from('mellomvaerende').select('*').eq('aktiv', true).then(({ data }) => { if (data) setMvData(data); });
+  }, []);
   }, []);
 
   useEffect(() => {
@@ -96,6 +102,15 @@ export default function Eiersameie() {
           <div className="text-sm text-muted-foreground">{isPerEier ? `Leieinntekter (din andel ${formatPct(currentEier!.inntektsandel_prosent)})` : 'Leieinntekter'}</div>
         </CardContent></Card>
       </div>
+
+      {mvData.length > 0 && (
+        <div className="flex items-center gap-2 p-3 bg-blue-50 border border-blue-200 rounded-lg cursor-pointer" onClick={() => navigate('/mellomvaerende')}>
+          <Handshake className="h-4 w-4 text-blue-600" />
+          <span className="text-sm text-blue-800">
+            Aktive mellomværender: {mvData.map(mv => `${mv.debitor} (${formatBelop(mv.gjeldende_saldo)} utestående)`).join(', ')}. Se detaljer →
+          </span>
+        </div>
+      )}
 
       <Card>
         <CardHeader><CardTitle>Kostnader per type</CardTitle></CardHeader>
