@@ -17,6 +17,7 @@ import {
   DoorOpen,
   CalendarDays,
   FileSignature,
+  Database,
 } from 'lucide-react';
 import { NavLink } from '@/components/NavLink';
 import { useLocation } from 'react-router-dom';
@@ -26,6 +27,7 @@ import {
   SidebarContent,
   SidebarGroup,
   SidebarGroupContent,
+  SidebarGroupLabel,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
@@ -34,11 +36,14 @@ import {
 } from '@/components/ui/sidebar';
 import { Button } from '@/components/ui/button';
 
-const navItems = [
-  { title: 'Dashboard', url: '/', icon: LayoutDashboard },
+const importDataItems = [
   { title: 'Transaksjoner', url: '/transaksjoner', icon: List },
   { title: 'Import', url: '/import', icon: Upload },
   { title: 'Datavasking', url: '/datavasking', icon: Sparkles },
+];
+
+const navItems = [
+  { title: 'Dashboard', url: '/', icon: LayoutDashboard },
   { title: 'Enheter', url: '/enheter', icon: DoorOpen },
   { title: 'Leietakere', url: '/leietakere', icon: Users },
   { title: 'Kontrakter', url: '/kontrakter', icon: FileSignature },
@@ -62,6 +67,23 @@ export function AppSidebar() {
   const location = useLocation();
   const { signOut } = useAuth();
 
+  const renderItems = (items: typeof navItems) =>
+    items.map((item) => (
+      <SidebarMenuItem key={item.url}>
+        <SidebarMenuButton asChild>
+          <NavLink
+            to={item.url}
+            end={item.url === '/'}
+            className="hover:bg-sidebar-accent"
+            activeClassName="bg-sidebar-accent text-sidebar-accent-foreground font-medium"
+          >
+            <item.icon className="h-4 w-4 shrink-0" />
+            {!collapsed && <span>{item.title}</span>}
+          </NavLink>
+        </SidebarMenuButton>
+      </SidebarMenuItem>
+    ));
+
   return (
     <Sidebar collapsible="icon">
       <SidebarContent>
@@ -72,24 +94,31 @@ export function AppSidebar() {
             </h1>
           )}
         </div>
+
+        {/* Dashboard */}
         <SidebarGroup>
           <SidebarGroupContent>
             <SidebarMenu>
-              {navItems.map((item) => (
-                <SidebarMenuItem key={item.url}>
-                  <SidebarMenuButton asChild>
-                    <NavLink
-                      to={item.url}
-                      end={item.url === '/'}
-                      className="hover:bg-sidebar-accent"
-                      activeClassName="bg-sidebar-accent text-sidebar-accent-foreground font-medium"
-                    >
-                      <item.icon className="h-4 w-4 shrink-0" />
-                      {!collapsed && <span>{item.title}</span>}
-                    </NavLink>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
+              {renderItems([navItems[0]])}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
+        {/* Import og data */}
+        <SidebarGroup>
+          {!collapsed && <SidebarGroupLabel>Import og data</SidebarGroupLabel>}
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {renderItems(importDataItems)}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
+        {/* Resten */}
+        <SidebarGroup>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {renderItems(navItems.slice(1))}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
