@@ -323,6 +323,7 @@ export default function Datavasking() {
                         <Input placeholder="F.eks. Terrassebord og skruer" value={detailForm.kostnadsbeskrivelse} onChange={e => setDetailForm(p => ({ ...p, kostnadsbeskrivelse: e.target.value }))} />
                       </div>
                     </div>
+                    </>
                   )}
                 </div>
               )}
