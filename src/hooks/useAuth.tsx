@@ -21,29 +21,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (_event, session) => {
-        setSession(session);
-        
-        // Seed data on first login
-        if (session?.user) {
-          try {
-            await supabase.rpc('seed_user_data', { p_user_id: session.user.id });
-          } catch {
-            // Ignore errors if already seeded
-          }
-        }
-        
-        setLoading(false);
-      }
-    );
-
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
       setSession(session);
+      if (session?.user) {
+        try { await supabase.rpc('seed_user_data', { p_user_id: session.user.id }); } catch {}
+      }
       setLoading(false);
     }).catch(() => {
       setLoading(false);
     });
+
+    // Then listen for changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (_event, session) => {
+        setSession(session);
+        setLoading(false);
+      }
+    );
 
     return () => subscription.unsubscribe();
   }, []);
