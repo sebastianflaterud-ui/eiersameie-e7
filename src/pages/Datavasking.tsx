@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
@@ -10,39 +10,26 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Switch } from '@/components/ui/switch';
 import { Progress } from '@/components/ui/progress';
 import { formatBelop, formatDato } from '@/lib/format';
 import { toast } from 'sonner';
-import { CheckCircle, SkipForward } from 'lucide-react';
+import { CheckCircle, Upload, Trash2, Paperclip } from 'lucide-react';
 
 interface Transaksjon {
-  id: string;
-  dato: string;
-  beskrivelse_bank: string;
-  beskrivelse_egen: string | null;
-  belop: number;
-  retning: string;
-  motpart_bank: string | null;
-  motpart_egen: string | null;
-  kategori: string;
-  underkategori: string | null;
-  klassifisering_status: string | null;
-  konto: string | null;
-  kilde: string;
-  arkivref: string | null;
-  inntektstype: string | null;
-  utgiftstype: string | null;
-  leverandor: string | null;
-  kostnadstype: string | null;
-  betalt_av: string | null;
-  leie_for: string | null;
-  leieperiode: string | null;
-  enhet: string | null;
-  notater: string | null;
-  skatteaar: number | null;
-  fradragsberettiget: boolean | null;
-  bokforingsdato: string | null;
+  id: string; dato: string; beskrivelse_bank: string; beskrivelse_egen: string | null;
+  belop: number; retning: string; motpart_bank: string | null; motpart_egen: string | null;
+  kategori: string; underkategori: string | null; klassifisering_status: string | null;
+  konto: string | null; kilde: string; arkivref: string | null;
+  inntektstype: string | null; utgiftstype: string | null; leverandor: string | null;
+  kostnadstype: string | null; betalt_av: string | null; leie_for: string | null;
+  leieperiode: string | null; enhet: string | null; notater: string | null;
+  skatteaar: number | null; fradragsberettiget: boolean | null; bokforingsdato: string | null;
+  er_oppgjor: boolean | null; oppgjor_til: string | null;
 }
+
+interface Bilag { id: string; filnavn: string; filtype: string; storage_path: string; }
+interface Eier { id: string; navn: string; }
 
 type FilterType = 'alle' | 'uklassifisert' | 'foreslått' | 'auto';
 
@@ -55,6 +42,13 @@ export default function Datavasking() {
   const [detailForm, setDetailForm] = useState<Record<string, any>>({});
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [page, setPage] = useState(0);
+  const [eiere, setEiere] = useState<Eier[]>([]);
+  const [bilagList, setBilagList] = useState<Bilag[]>([]);
+  const [uploading, setUploading] = useState(false);
+
+  useEffect(() => {
+    supabase.from('eiere').select('id, navn').then(({ data }) => { if (data) setEiere(data as Eier[]); });
+  }, []);
 
   const fetchStats = async () => {
     const { count: total } = await supabase.from('transaksjoner').select('*', { count: 'exact', head: true });
@@ -70,9 +64,13 @@ export default function Datavasking() {
     else if (filter === 'foreslått') query = query.eq('klassifisering_status', 'foreslått');
     else if (filter === 'auto') query = query.eq('klassifisering_status', 'auto');
     else query = query.or('kategori.eq.Uklassifisert,klassifisering_status.eq.foreslått');
-    
     const { data } = await query.order('dato', { ascending: false }).range(page * 25, (page + 1) * 25 - 1);
     if (data) setItems(data as Transaksjon[]);
+  };
+
+  const fetchBilag = async (txId: string) => {
+    const { data } = await supabase.from('bilag').select('*').eq('transaksjon_id', txId);
+    if (data) setBilagList(data as Bilag[]);
   };
 
   useEffect(() => { fetchStats(); }, []);
@@ -81,8 +79,7 @@ export default function Datavasking() {
   const quickClassify = async (id: string, kategori: string) => {
     await supabase.from('transaksjoner').update({ kategori: kategori as any, klassifisering_status: 'manuell' as any }).eq('id', id);
     toast.success(`Klassifisert som ${kategori}`);
-    fetchItems();
-    fetchStats();
+    fetchItems(); fetchStats();
   };
 
   const bulkClassify = async (kategori: string) => {
@@ -90,64 +87,68 @@ export default function Datavasking() {
     for (const id of selected) {
       await supabase.from('transaksjoner').update({ kategori: kategori as any, klassifisering_status: 'manuell' as any }).eq('id', id);
     }
-    toast.success(`${selected.size} transaksjoner klassifisert som ${kategori}`);
-    setSelected(new Set());
-    fetchItems();
-    fetchStats();
+    toast.success(`${selected.size} transaksjoner klassifisert`);
+    setSelected(new Set()); fetchItems(); fetchStats();
   };
 
   const openDetail = (t: Transaksjon) => {
     setDetailItem(t);
     setDetailForm({
-      kategori: t.kategori,
-      underkategori: t.underkategori || '',
-      motpart_egen: t.motpart_egen || '',
-      kostnadstype: t.kostnadstype || '',
-      inntektstype: t.inntektstype || '',
-      utgiftstype: t.utgiftstype || '',
-      leverandor: t.leverandor || '',
-      betalt_av: t.betalt_av || '',
-      leie_for: t.leie_for || '',
-      leieperiode: t.leieperiode || '',
-      enhet: t.enhet || '',
-      beskrivelse_egen: t.beskrivelse_egen || '',
-      notater: t.notater || '',
-      skatteaar: t.skatteaar || '',
+      kategori: t.kategori, underkategori: t.underkategori || '', motpart_egen: t.motpart_egen || '',
+      kostnadstype: t.kostnadstype || '', inntektstype: t.inntektstype || '', utgiftstype: t.utgiftstype || '',
+      leverandor: t.leverandor || '', betalt_av: t.betalt_av || '', leie_for: t.leie_for || '',
+      leieperiode: t.leieperiode || '', enhet: t.enhet || '', beskrivelse_egen: t.beskrivelse_egen || '',
+      notater: t.notater || '', skatteaar: t.skatteaar || '',
+      er_oppgjor: t.er_oppgjor || false, oppgjor_til: t.oppgjor_til || '',
     });
+    fetchBilag(t.id);
   };
 
   const saveDetail = async (status: string) => {
     if (!detailItem) return;
     const { error } = await supabase.from('transaksjoner').update({
-      kategori: detailForm.kategori as any,
-      underkategori: detailForm.underkategori || null,
-      motpart_egen: detailForm.motpart_egen || null,
-      kostnadstype: detailForm.kostnadstype || null,
-      inntektstype: detailForm.inntektstype || null,
-      utgiftstype: detailForm.utgiftstype || null,
-      leverandor: detailForm.leverandor || null,
-      betalt_av: detailForm.betalt_av || null,
-      leie_for: detailForm.leie_for || null,
-      leieperiode: detailForm.leieperiode || null,
-      enhet: detailForm.enhet || null,
-      beskrivelse_egen: detailForm.beskrivelse_egen || null,
-      notater: detailForm.notater || null,
-      skatteaar: detailForm.skatteaar ? Number(detailForm.skatteaar) : null,
+      kategori: detailForm.kategori as any, underkategori: detailForm.underkategori || null,
+      motpart_egen: detailForm.motpart_egen || null, kostnadstype: detailForm.kostnadstype || null,
+      inntektstype: detailForm.inntektstype || null, utgiftstype: detailForm.utgiftstype || null,
+      leverandor: detailForm.leverandor || null, betalt_av: detailForm.betalt_av || null,
+      leie_for: detailForm.leie_for || null, leieperiode: detailForm.leieperiode || null,
+      enhet: detailForm.enhet || null, beskrivelse_egen: detailForm.beskrivelse_egen || null,
+      notater: detailForm.notater || null, skatteaar: detailForm.skatteaar ? Number(detailForm.skatteaar) : null,
       klassifisering_status: status as any,
+      er_oppgjor: detailForm.er_oppgjor, oppgjor_til: detailForm.er_oppgjor ? (detailForm.oppgjor_til || null) : null,
     }).eq('id', detailItem.id);
-
     if (error) { toast.error(error.message); return; }
     toast.success('Lagret');
-
-    // Move to next item
     const currentIdx = items.findIndex(i => i.id === detailItem.id);
-    if (currentIdx < items.length - 1) {
-      openDetail(items[currentIdx + 1]);
-    } else {
-      setDetailItem(null);
+    if (status === 'manuell' && currentIdx < items.length - 1) { openDetail(items[currentIdx + 1]); }
+    else { setDetailItem(null); }
+    fetchItems(); fetchStats();
+  };
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files || !detailItem || !user) return;
+    setUploading(true);
+    for (const file of Array.from(e.target.files)) {
+      if (file.size > 10 * 1024 * 1024) { toast.error(`${file.name} er over 10 MB`); continue; }
+      const path = `${user.id}/${detailItem.id}/${Date.now()}_${file.name}`;
+      const { error: uploadError } = await supabase.storage.from('bilag').upload(path, file);
+      if (uploadError) { toast.error(`Opplastingsfeil: ${uploadError.message}`); continue; }
+      await supabase.from('bilag').insert({
+        user_id: user.id, transaksjon_id: detailItem.id,
+        filnavn: file.name, filtype: file.type, filstorrelse: file.size, storage_path: path,
+      });
     }
-    fetchItems();
-    fetchStats();
+    setUploading(false);
+    toast.success('Bilag lastet opp');
+    fetchBilag(detailItem.id);
+    e.target.value = '';
+  };
+
+  const deleteBilag = async (b: Bilag) => {
+    await supabase.storage.from('bilag').remove([b.storage_path]);
+    await supabase.from('bilag').delete().eq('id', b.id);
+    toast.success('Bilag slettet');
+    if (detailItem) fetchBilag(detailItem.id);
   };
 
   const pct = stats.total > 0 ? Math.round((stats.klassifisert / stats.total) * 100) : 0;
@@ -156,7 +157,6 @@ export default function Datavasking() {
     <div className="space-y-6">
       <h1 className="text-2xl font-bold">Datavasking</h1>
 
-      {/* Stats */}
       <div className="grid grid-cols-4 gap-4">
         <Card><CardContent className="pt-4"><div className="text-2xl font-bold">{stats.total}</div><div className="text-sm text-muted-foreground">Totalt</div></CardContent></Card>
         <Card><CardContent className="pt-4"><div className="text-2xl font-bold text-green-600">{stats.klassifisert}</div><div className="text-sm text-muted-foreground">Klassifisert</div></CardContent></Card>
@@ -166,7 +166,6 @@ export default function Datavasking() {
       <Progress value={pct} className="h-2" />
       <p className="text-sm text-muted-foreground">{pct}% klassifisert</p>
 
-      {/* Filter & Bulk */}
       <div className="flex items-center gap-2">
         <Select value={filter} onValueChange={v => { setFilter(v as FilterType); setPage(0); }}>
           <SelectTrigger className="w-[200px]"><SelectValue /></SelectTrigger>
@@ -187,41 +186,23 @@ export default function Datavasking() {
         )}
       </div>
 
-      {/* Triage table */}
       <div className="border rounded-lg overflow-auto">
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead className="w-8">
-                <input type="checkbox" onChange={e => {
-                  if (e.target.checked) setSelected(new Set(items.map(i => i.id)));
-                  else setSelected(new Set());
-                }} />
-              </TableHead>
-              <TableHead>Dato</TableHead>
-              <TableHead>Motpart</TableHead>
-              <TableHead>Beskrivelse</TableHead>
-              <TableHead className="text-right">Beløp</TableHead>
-              <TableHead>Kategori</TableHead>
-              <TableHead>Handling</TableHead>
+              <TableHead className="w-8"><input type="checkbox" onChange={e => { if (e.target.checked) setSelected(new Set(items.map(i => i.id))); else setSelected(new Set()); }} /></TableHead>
+              <TableHead>Dato</TableHead><TableHead>Motpart</TableHead><TableHead>Beskrivelse</TableHead>
+              <TableHead className="text-right">Beløp</TableHead><TableHead>Kategori</TableHead><TableHead>Handling</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {items.map(t => (
               <TableRow key={t.id} className="cursor-pointer hover:bg-muted/80" onClick={() => openDetail(t)}>
-                <TableCell onClick={e => e.stopPropagation()}>
-                  <input type="checkbox" checked={selected.has(t.id)} onChange={e => {
-                    const next = new Set(selected);
-                    e.target.checked ? next.add(t.id) : next.delete(t.id);
-                    setSelected(next);
-                  }} />
-                </TableCell>
+                <TableCell onClick={e => e.stopPropagation()}><input type="checkbox" checked={selected.has(t.id)} onChange={e => { const next = new Set(selected); e.target.checked ? next.add(t.id) : next.delete(t.id); setSelected(next); }} /></TableCell>
                 <TableCell className="font-mono text-xs">{formatDato(t.dato)}</TableCell>
                 <TableCell className="text-sm">{t.motpart_egen || t.motpart_bank || '-'}</TableCell>
                 <TableCell className="text-sm max-w-[200px] truncate">{t.beskrivelse_bank}</TableCell>
-                <TableCell className={`text-right font-mono text-sm ${t.retning === 'inn' ? 'text-green-600' : 'text-red-600'}`}>
-                  {t.retning === 'ut' ? '-' : ''}{formatBelop(t.belop)}
-                </TableCell>
+                <TableCell className={`text-right font-mono text-sm ${t.retning === 'inn' ? 'text-green-600' : 'text-red-600'}`}>{t.retning === 'ut' ? '-' : ''}{formatBelop(t.belop)}</TableCell>
                 <TableCell><Badge variant="outline" className="text-xs">{t.kategori}</Badge></TableCell>
                 <TableCell onClick={e => e.stopPropagation()}>
                   <div className="flex gap-1">
@@ -247,7 +228,6 @@ export default function Datavasking() {
           <DialogHeader><DialogTitle>Transaksjon — {detailItem?.beskrivelse_bank}</DialogTitle></DialogHeader>
           {detailItem && (
             <div className="space-y-4">
-              {/* Bank data (read-only) */}
               <div className="p-3 bg-muted rounded-lg space-y-1 text-sm">
                 <div className="font-medium text-xs text-muted-foreground mb-2">Bankdata (skrivebeskyttet)</div>
                 <div className="grid grid-cols-2 gap-x-4 gap-y-1">
@@ -260,7 +240,6 @@ export default function Datavasking() {
                 </div>
               </div>
 
-              {/* Classification */}
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1">
                   <Label>Kategori</Label>
@@ -278,7 +257,28 @@ export default function Datavasking() {
               </div>
               <div className="space-y-1"><Label>Motpart (egen)</Label><Input value={detailForm.motpart_egen} onChange={e => setDetailForm(p => ({ ...p, motpart_egen: e.target.value }))} /></div>
 
-              {/* Dynamic fields */}
+              {/* Oppgjør section */}
+              {detailItem.retning === 'ut' && detailForm.kategori === 'Eiersameie E7' && (
+                <div className="p-3 bg-gray-50 rounded-lg border space-y-2">
+                  <div className="font-medium text-sm">Oppgjør</div>
+                  <div className="flex items-center gap-2">
+                    <Switch checked={detailForm.er_oppgjor} onCheckedChange={v => setDetailForm(p => ({ ...p, er_oppgjor: v }))} />
+                    <Label className="text-sm">Dette er et oppgjør/viderefordeling til medeier</Label>
+                  </div>
+                  {detailForm.er_oppgjor && (
+                    <div className="space-y-1">
+                      <Label>Oppgjør til</Label>
+                      <Select value={detailForm.oppgjor_til} onValueChange={v => setDetailForm(p => ({ ...p, oppgjor_til: v }))}>
+                        <SelectTrigger><SelectValue placeholder="Velg eier" /></SelectTrigger>
+                        <SelectContent>
+                          {eiere.map(e => <SelectItem key={e.id} value={e.navn}>{e.navn}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
+                </div>
+              )}
+
               {detailItem.retning === 'inn' && (
                 <div className="grid grid-cols-2 gap-3 p-3 bg-green-50 rounded-lg border border-green-200">
                   <div className="space-y-1"><Label>Inntektstype</Label><Input value={detailForm.inntektstype} onChange={e => setDetailForm(p => ({ ...p, inntektstype: e.target.value }))} /></div>
@@ -288,7 +288,7 @@ export default function Datavasking() {
                   <div className="space-y-1"><Label>Enhet</Label><Input value={detailForm.enhet} onChange={e => setDetailForm(p => ({ ...p, enhet: e.target.value }))} /></div>
                 </div>
               )}
-              {detailItem.retning === 'ut' && (
+              {detailItem.retning === 'ut' && !detailForm.er_oppgjor && (
                 <div className="grid grid-cols-3 gap-3 p-3 bg-red-50 rounded-lg border border-red-200">
                   <div className="space-y-1"><Label>Utgiftstype</Label><Input value={detailForm.utgiftstype} onChange={e => setDetailForm(p => ({ ...p, utgiftstype: e.target.value }))} /></div>
                   <div className="space-y-1"><Label>Leverandør</Label><Input value={detailForm.leverandor} onChange={e => setDetailForm(p => ({ ...p, leverandor: e.target.value }))} /></div>
@@ -299,6 +299,23 @@ export default function Datavasking() {
               <div className="space-y-1"><Label>Egen beskrivelse</Label><Input value={detailForm.beskrivelse_egen} onChange={e => setDetailForm(p => ({ ...p, beskrivelse_egen: e.target.value }))} /></div>
               <div className="space-y-1"><Label>Notater</Label><Textarea value={detailForm.notater} onChange={e => setDetailForm(p => ({ ...p, notater: e.target.value }))} /></div>
               <div className="space-y-1"><Label>Skatteår</Label><Input type="number" value={detailForm.skatteaar} onChange={e => setDetailForm(p => ({ ...p, skatteaar: e.target.value }))} /></div>
+
+              {/* Bilag section */}
+              <div className="p-3 bg-blue-50 rounded-lg border border-blue-200 space-y-2">
+                <div className="flex items-center justify-between">
+                  <div className="font-medium text-sm flex items-center gap-1"><Paperclip className="h-4 w-4" /> Bilag ({bilagList.length})</div>
+                  <label className="cursor-pointer">
+                    <input type="file" accept=".pdf,.jpg,.jpeg,.png" multiple className="hidden" onChange={handleFileUpload} disabled={uploading} />
+                    <Button size="sm" variant="outline" asChild disabled={uploading}><span><Upload className="h-4 w-4 mr-1" />{uploading ? 'Laster opp...' : 'Last opp'}</span></Button>
+                  </label>
+                </div>
+                {bilagList.map(b => (
+                  <div key={b.id} className="flex items-center justify-between text-sm bg-white rounded p-2">
+                    <span>{b.filnavn}</span>
+                    <Button size="sm" variant="ghost" onClick={() => deleteBilag(b)}><Trash2 className="h-4 w-4 text-red-500" /></Button>
+                  </div>
+                ))}
+              </div>
             </div>
           )}
           <DialogFooter className="gap-2">

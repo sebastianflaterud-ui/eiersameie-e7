@@ -12,6 +12,7 @@ import Import from "./pages/Import";
 import Datavasking from "./pages/Datavasking";
 import Leieinntekter from "./pages/Leieinntekter";
 import Eiersameie from "./pages/Eiersameie";
+import Eiere from "./pages/Eiere";
 import Abonnementer from "./pages/Abonnementer";
 import Skatt from "./pages/Skatt";
 import Regler from "./pages/Regler";
@@ -45,6 +46,7 @@ function ProtectedRoutes() {
         <Route path="/datavasking" element={<Datavasking />} />
         <Route path="/leieinntekter" element={<Leieinntekter />} />
         <Route path="/eiersameie" element={<Eiersameie />} />
+        <Route path="/eiere" element={<Eiere />} />
         <Route path="/abonnementer" element={<Abonnementer />} />
         <Route path="/skatt" element={<Skatt />} />
         <Route path="/regler" element={<Regler />} />
