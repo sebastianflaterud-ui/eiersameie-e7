@@ -46,11 +46,11 @@ const utleieItems = [
   { title: 'Leietakere', url: '/leietakere', icon: Users },
   { title: 'Kontrakter', url: '/kontrakter', icon: FileSignature },
   { title: 'Leieinntekter', url: '/leieinntekter', icon: Home },
-  { title: 'Skattemeldingsgrunnlag', url: '/skatt', icon: FileText },
 ];
 
-const privatItems = [
+const ekonomiItems = [
   { title: 'Abonnementer', url: '/abonnementer', icon: CreditCard },
+  { title: 'Skattemeldingsgrunnlag', url: '/skatt', icon: FileText },
 ];
 
 const importItems = [
