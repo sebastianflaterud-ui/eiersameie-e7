@@ -48,6 +48,7 @@ export interface ParsedTransaksjon {
   enhet?: string;
   leverandor?: string;
   beskrivelse_egen?: string;
+  notater?: string;
 }
 
 function matchesRule(tekst: string, regel: KlassifiseringsRegel): boolean {
