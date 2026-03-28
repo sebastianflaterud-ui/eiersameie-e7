@@ -34,9 +34,11 @@ import {
 } from '@/components/ui/sidebar';
 import { Button } from '@/components/ui/button';
 
-const eiendomItems = [
+const eiersameieItems = [
   { title: 'Enheter', url: '/enheter', icon: DoorOpen },
   { title: 'Kalender', url: '/kalender', icon: CalendarDays },
+  { title: 'Investeringer', url: '/investeringer', icon: Hammer },
+  { title: 'Mellomværende', url: '/mellomvaerende', icon: Handshake },
 ];
 
 const utleieItems = [
@@ -44,8 +46,6 @@ const utleieItems = [
   { title: 'Kontrakter', url: '/kontrakter', icon: FileSignature },
   { title: 'Leieinntekter', url: '/leieinntekter', icon: Home },
   { title: 'Eiersameie', url: '/eiersameie', icon: Building },
-  { title: 'Mellomværende', url: '/mellomvaerende', icon: Handshake },
-  { title: 'Investeringer', url: '/investeringer', icon: Hammer },
   { title: 'Skattemeldingsgrunnlag', url: '/skatt', icon: FileText },
 ];
 
