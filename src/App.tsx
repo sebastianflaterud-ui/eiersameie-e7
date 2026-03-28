@@ -12,6 +12,7 @@ import Import from "./pages/Import";
 import Datavasking from "./pages/Datavasking";
 import Enheter from "./pages/Enheter";
 import LeietakerePage from "./pages/LeietakerePage";
+import Kontrakter from "./pages/Kontrakter";
 import Beleggsoversikt from "./pages/Beleggsoversikt";
 import Leieinntekter from "./pages/Leieinntekter";
 import Eiersameie from "./pages/Eiersameie";
@@ -51,6 +52,7 @@ function ProtectedRoutes() {
         <Route path="/datavasking" element={<Datavasking />} />
         <Route path="/enheter" element={<Enheter />} />
         <Route path="/leietakere" element={<LeietakerePage />} />
+        <Route path="/kontrakter" element={<Kontrakter />} />
         <Route path="/belegg" element={<Beleggsoversikt />} />
         <Route path="/leieinntekter" element={<Leieinntekter />} />
         <Route path="/eiersameie" element={<Eiersameie />} />

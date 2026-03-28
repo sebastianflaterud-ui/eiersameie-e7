@@ -16,6 +16,7 @@ import {
   Hammer,
   DoorOpen,
   CalendarDays,
+  FileSignature,
 } from 'lucide-react';
 import { NavLink } from '@/components/NavLink';
 import { useLocation } from 'react-router-dom';
@@ -40,6 +41,7 @@ const navItems = [
   { title: 'Datavasking', url: '/datavasking', icon: Sparkles },
   { title: 'Enheter', url: '/enheter', icon: DoorOpen },
   { title: 'Leietakere', url: '/leietakere', icon: Users },
+  { title: 'Kontrakter', url: '/kontrakter', icon: FileSignature },
   { title: 'Beleggsoversikt', url: '/belegg', icon: CalendarDays },
   { title: 'Leieinntekter', url: '/leieinntekter', icon: Home },
   { title: 'Eiersameie E7', url: '/eiersameie', icon: Building },
