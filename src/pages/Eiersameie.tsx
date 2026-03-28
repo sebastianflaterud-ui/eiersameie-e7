@@ -27,7 +27,6 @@ export default function Eiersameie() {
     supabase.from('eiere').select('*').eq('aktiv', true).then(({ data }) => { if (data) setEiere(data as Eier[]); });
     supabase.from('mellomvaerende').select('*').eq('aktiv', true).then(({ data }) => { if (data) setMvData(data); });
   }, []);
-  }, []);
 
   useEffect(() => {
     async function fetch() {
