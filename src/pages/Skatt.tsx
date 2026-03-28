@@ -288,6 +288,9 @@ export default function Skatt() {
               <div className="flex justify-between"><span>× {isMotivus ? 'Selskapets' : 'Din'} kostnadsandel ({formatPct(currentEier.kostnadsandel_prosent)}):</span><span></span></div>
               <div className="border-t pt-2 flex justify-between font-bold"><span>= {isMotivus ? 'Selskapets' : 'Dine'} fradragsberettigede kostnader:</span><span className="text-red-600">-{formatBelop(Math.round(totals.fradrag * kostnadsAndel))}</span></div>
             </div>
+            <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg text-sm text-blue-800">
+              Merk: {currentEier.navn} har betalt en del av totale E7-kostnader direkte, men {isMotivus ? 'selskapets' : 'din'} fradragsberettigede andel er {formatBelop(Math.round(totals.fradrag * kostnadsAndel))} (basert på kostnadsandel {formatPct(currentEier.kostnadsandel_prosent)}). Differansen er et internt oppgjør mellom eierne.
+            </div>
           </CardContent>
         </Card>
       )}

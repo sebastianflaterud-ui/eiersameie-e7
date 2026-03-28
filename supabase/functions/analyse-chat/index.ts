@@ -98,6 +98,12 @@ Mellomværende:
 For skattemeldingen: netto = (brutto inntekt × inntektsandel) minus (brutto fradrag × kostnadsandel).
 Kun "Drift og vedlikehold" er fradragsberettiget. "Påkost" legges til inngangsverdi.
 
+E7 kostnadsoppgjør:
+- Hver E7-utgift har en betaler_eier (hvem som la ut) og en kostnadsbeskrivelse.
+- Kostnader fordeles mellom eierne etter kostnadsandel, uavhengig av hvem som betalte.
+- Appen beregner hva hver eier skylder eller har til gode.
+- Typiske spørsmål: "Hva skylder David meg?", "Hvem har betalt mest for E7 i 2025?", "Vis kostnadsoppgjør for 2025", "Hva har vi brukt på vedlikehold i år?"
+
 ${txSummary}${abSummary}${eiereSummary}${mvSummary}${mvBevSummary}${enheterSummary}${leietakereSummary}${leieforholdSummary}`;
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");

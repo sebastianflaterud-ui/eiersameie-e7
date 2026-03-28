@@ -22,6 +22,8 @@ export default function Eiersameie() {
   const [chartData, setChartData] = useState<{ name: string; belop: number }[]>([]);
   const [kostnadTyper, setKostnadTyper] = useState<{ type: string; underkategori: string; antall: number; sum: number }[]>([]);
   const [mvData, setMvData] = useState<any[]>([]);
+  const [oppgjorData, setOppgjorData] = useState<{ eier: string; betalt: number; andel: number; diff: number }[]>([]);
+  const [detaljertKostnader, setDetaljertKostnader] = useState<any[]>([]);
 
   useEffect(() => {
     supabase.from('eiere').select('*').eq('aktiv', true).then(({ data }) => { if (data) setEiere(data as Eier[]); });
@@ -36,7 +38,6 @@ export default function Eiersameie() {
         .order('dato', { ascending: false });
       if (!data) return;
 
-      // Filter out oppgjør for calculations
       const realTxs = data.filter(t => !t.er_oppgjor);
       setTxs(data);
 
@@ -57,9 +58,26 @@ export default function Eiersameie() {
         ktMap[key].antall++; ktMap[key].sum += Number(t.belop);
       }
       setKostnadTyper(Object.entries(ktMap).map(([type, v]) => ({ type, ...v })).sort((a, b) => b.sum - a.sum));
+
+      // Eieroppgjør: beregn hva hver eier har betalt vs sin andel
+      setDetaljertKostnader(utgifter);
     }
     fetch();
   }, [year]);
+
+  // Compute oppgjør when eiere or detaljert changes
+  useEffect(() => {
+    if (eiere.length === 0 || detaljertKostnader.length === 0) { setOppgjorData([]); return; }
+    const totalKostnader = detaljertKostnader.reduce((s, t) => s + Number(t.belop), 0);
+    const result = eiere.map(e => {
+      const betalt = detaljertKostnader
+        .filter(t => t.betaler_eier === e.navn)
+        .reduce((s, t) => s + Number(t.belop), 0);
+      const andel = Math.round(totalKostnader * e.kostnadsandel_prosent / 100);
+      return { eier: e.navn, betalt, andel, diff: betalt - andel };
+    });
+    setOppgjorData(result);
+  }, [eiere, detaljertKostnader]);
 
   const currentEier = eiere.find(e => e.navn === selectedEier);
   const isPerEier = selectedEier !== 'alle';
@@ -111,6 +129,96 @@ export default function Eiersameie() {
         </div>
       )}
 
+      {/* Eieroppgjør */}
+      <Card>
+        <CardHeader><CardTitle>Eieroppgjør {year}</CardTitle></CardHeader>
+        <CardContent>
+          <p className="text-sm text-muted-foreground mb-4">Beregner hva hver eier skylder eller har til gode basert på hvem som betalte og kostnadsandel.</p>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Eier</TableHead>
+                <TableHead className="text-right">Har betalt totalt</TableHead>
+                <TableHead className="text-right">Andel av kostnader</TableHead>
+                <TableHead className="text-right">Differanse</TableHead>
+                <TableHead>Status</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {oppgjorData.map(o => (
+                <TableRow key={o.eier}>
+                  <TableCell className="font-medium">{o.eier}</TableCell>
+                  <TableCell className="text-right font-mono">{formatBelop(o.betalt)}</TableCell>
+                  <TableCell className="text-right font-mono">{formatBelop(o.andel)}</TableCell>
+                  <TableCell className={`text-right font-mono font-bold ${o.diff > 0 ? 'text-green-600' : o.diff < 0 ? 'text-red-600' : ''}`}>
+                    {o.diff > 0 ? '+' : ''}{formatBelop(o.diff)}
+                  </TableCell>
+                  <TableCell>
+                    {o.diff > 0 && <Badge className="bg-green-100 text-green-800">Til gode</Badge>}
+                    {o.diff < 0 && <Badge className="bg-red-100 text-red-800">Skylder</Badge>}
+                    {o.diff === 0 && <Badge variant="outline">Oppgjort</Badge>}
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+          {detaljertKostnader.some(t => !t.betaler_eier) && (
+            <div className="mt-3 p-3 bg-yellow-50 border border-yellow-200 rounded-lg text-sm text-yellow-800">
+              ⚠️ {detaljertKostnader.filter(t => !t.betaler_eier).length} kostnader mangler betaler. Gå til Datavasking for å sette «Betaler» på E7-utgifter.
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Detaljert kostnadsoppstilling */}
+      <Card>
+        <CardHeader><CardTitle>Detaljert kostnadsoppstilling {year}</CardTitle></CardHeader>
+        <CardContent>
+          <div className="overflow-auto max-h-[400px]">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Dato</TableHead>
+                  <TableHead>Kostnadsbeskrivelse</TableHead>
+                  <TableHead>Underkategori</TableHead>
+                  <TableHead className="text-right">Beløp</TableHead>
+                  <TableHead>Betaler</TableHead>
+                  {eiere.map(e => <TableHead key={e.id} className="text-right text-xs">{e.navn.split(' ')[0]}</TableHead>)}
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {detaljertKostnader.map(t => (
+                  <TableRow key={t.id}>
+                    <TableCell className="font-mono text-xs">{formatDato(t.dato)}</TableCell>
+                    <TableCell className="text-sm">{t.kostnadsbeskrivelse || t.beskrivelse_bank}</TableCell>
+                    <TableCell className="text-sm">{t.underkategori || '-'}</TableCell>
+                    <TableCell className="text-right font-mono text-sm text-red-600">{formatBelop(t.belop)}</TableCell>
+                    <TableCell className="text-sm">{t.betaler_eier ? t.betaler_eier.split(' ')[0] : <span className="text-yellow-600">?</span>}</TableCell>
+                    {eiere.map(e => (
+                      <TableCell key={e.id} className="text-right font-mono text-xs">
+                        {formatBelop(Math.round(Number(t.belop) * e.kostnadsandel_prosent / 100))}
+                      </TableCell>
+                    ))}
+                  </TableRow>
+                ))}
+                {detaljertKostnader.length > 0 && (
+                  <TableRow className="font-bold border-t-2">
+                    <TableCell colSpan={3}>Totalt</TableCell>
+                    <TableCell className="text-right font-mono text-red-600">{formatBelop(detaljertKostnader.reduce((s, t) => s + Number(t.belop), 0))}</TableCell>
+                    <TableCell></TableCell>
+                    {eiere.map(e => (
+                      <TableCell key={e.id} className="text-right font-mono text-xs">
+                        {formatBelop(Math.round(detaljertKostnader.reduce((s, t) => s + Number(t.belop), 0) * e.kostnadsandel_prosent / 100))}
+                      </TableCell>
+                    ))}
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </div>
+        </CardContent>
+      </Card>
+
       <Card>
         <CardHeader><CardTitle>Kostnader per type</CardTitle></CardHeader>
         <CardContent>
@@ -149,17 +257,18 @@ export default function Eiersameie() {
             <Table>
               <TableHeader><TableRow>
                 <TableHead>Dato</TableHead><TableHead>Beskrivelse</TableHead><TableHead>Underkategori</TableHead>
-                <TableHead className="text-right">Beløp</TableHead><TableHead>Fradrag</TableHead><TableHead>Oppgjør</TableHead>
+                <TableHead className="text-right">Beløp</TableHead><TableHead>Betaler</TableHead><TableHead>Fradrag</TableHead><TableHead>Oppgjør</TableHead>
               </TableRow></TableHeader>
               <TableBody>
                 {txs.map(t => (
                   <TableRow key={t.id} className={t.er_oppgjor ? 'bg-gray-50' : ''}>
                     <TableCell className="font-mono text-xs">{formatDato(t.dato)}</TableCell>
-                    <TableCell className="text-sm">{t.beskrivelse_bank}</TableCell>
+                    <TableCell className="text-sm">{t.kostnadsbeskrivelse || t.beskrivelse_bank}</TableCell>
                     <TableCell className="text-sm">{t.underkategori || '-'}</TableCell>
                     <TableCell className={`text-right font-mono text-sm ${t.er_oppgjor ? 'text-gray-500' : t.retning === 'inn' ? 'text-green-600' : 'text-red-600'}`}>
                       {t.retning === 'ut' ? '-' : ''}{formatBelop(t.belop)}
                     </TableCell>
+                    <TableCell className="text-sm">{t.retning === 'ut' && !t.er_oppgjor ? (t.betaler_eier || <span className="text-yellow-600">?</span>) : '-'}</TableCell>
                     <TableCell>
                       {t.retning === 'ut' && !t.er_oppgjor && (
                         <Badge variant={t.fradragsberettiget ? 'default' : 'secondary'} className={t.fradragsberettiget ? 'bg-green-100 text-green-800' : ''}>
