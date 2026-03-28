@@ -14,7 +14,7 @@ import { Switch } from '@/components/ui/switch';
 import { Progress } from '@/components/ui/progress';
 import { formatBelop, formatDato } from '@/lib/format';
 import { toast } from 'sonner';
-import { CheckCircle, Upload, Trash2, Paperclip } from 'lucide-react';
+import { CheckCircle, Upload, Trash2, Paperclip, Sparkles, Loader2 } from 'lucide-react';
 
 interface Transaksjon {
   id: string; dato: string; beskrivelse_bank: string; beskrivelse_egen: string | null;
