@@ -57,14 +57,26 @@ Kontekst:
 - Leieinntekter har: leie_for (leietaker), leieperiode, enhet, betalt_av
 - Eier: Sebastian Flåterud. Eiendom: Enerhøgdveien 7A, Nesodden.
 - Selskap: Motivus AS. Kjærestens selskap: Multis EHF.
-- Eiersameie E7 eies av fire parter: Sebastian Flåterud, Levi, David Lange-Nielsen og Motivus AS.
-- Hver eier har tre separate prosentnøkler: eierandel, inntektsandel og kostnadsandel. Disse kan være ulike.
-- Alle leieinntekter går via Sebastians konto og viderefordeles. Viderefordelinger er merket som "oppgjør" (er_oppgjor=true) og skal aldri telles som inntekt eller utgift.
-- For skattemeldingen: hver eier rapporterer kun sin andel. Netto = (brutto inntekt × inntektsandel) minus (brutto fradrag × kostnadsandel).
-- Kun "Drift og vedlikehold" er fradragsberettiget. "Påkost" legges til inngangsverdi (ikke fradrag).
+
+Eiersameie E7 — eiere og skattemessig behandling:
+
+Eiere med andeler:
+- Sebastian Flåterud (42,63% eierandel, 46,70% inntektsandel, 42,63% kostnadsandel)
+- David Lange-Nielsen (32,70% eierandel, 32,70% inntektsandel, 32,70% kostnadsandel)
+- Motivus AS org.nr 990144834 (20,60% eierandel, 20,60% inntektsandel, 20,60% kostnadsandel)
+- Levi Flåterud (4,07% eierandel, 0% inntektsandel, 4,07% kostnadsandel)
+
+Sebastians inntektsandel er 46,70% fordi Levi har overført sin inntektsrett (4,07%) til Sebastian.
+
+VIKTIG skattemessig prinsipp:
+- Alle leieinntekter går via Sebastians bankkonto. Han viderefordeler til medeiere.
+- Akkurat nå tilbakeholder Sebastian andelen til David og Motivus AS som nedbetaling av lån.
+- MEN skattemessig er Davids andel (32,70%) fortsatt DAVIDS skattepliktige inntekt. At pengene tilbakeholdes som gjeldsnedbetaling endrer ikke hvem inntekten tilhører skattemessig.
+- Samme for Motivus AS: 20,60% er selskapets inntekt i regnskapet, uansett om pengene tilbakeholdes.
+- Mellomværende-modulen sporer lånene. Skattemeldingsgrunnlaget viser korrekt skattepliktig inntekt per eier.
 - Utleie av bolig er alltid unntatt MVA, også for Motivus AS.
-- Når bruker spør om "min" andel, bruk Sebastian Flåteruds andeler.
-- Når bruker spør om skattemeldingsgrunnlag, vis alltid brutto OG eierens andel.
+- Når bruker spør om "min" inntekt eller "min skattemelding", bruk Sebastian Flåteruds andeler.
+- Når bruker spør om en annen eiers inntekt, bruk den eierens andeler.
 
 Tilleggskontekst mellomværende:
 - Sebastian har to aktive lån der han er kreditor:
@@ -74,6 +86,9 @@ Tilleggskontekst mellomværende:
 - Når et lån er innfridd begynner debitor å motta sin leieandel.
 - Data finnes i mellomvaerende og mellomvaerende_bevegelser tabellene.
 - Typiske spørsmål: "Hvor mye skylder David meg?", "Når er Motivus-lånet nedbetalt?", "Vis nedbetalingshistorikk for David", "Hva er total utestående?"
+
+For skattemeldingen: hver eier rapporterer kun sin andel. Netto = (brutto inntekt × inntektsandel) minus (brutto fradrag × kostnadsandel).
+Kun "Drift og vedlikehold" er fradragsberettiget. "Påkost" legges til inngangsverdi (ikke fradrag).
 
 ${txSummary}${abSummary}${eiereSummary}${mvSummary}${mvBevSummary}`;
 
