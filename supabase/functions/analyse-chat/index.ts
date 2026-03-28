@@ -142,7 +142,7 @@ ${txSummary}${abSummary}${eiereSummary}${mvSummary}${mvBevSummary}${enheterSumma
       headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
       body: JSON.stringify({
         model: "google/gemini-3-flash-preview",
-        messages: [{ role: "system", content: systemPrompt }, ...messages],
+        messages: [{ role: "system", content: fullSystemPrompt }, ...messages],
         max_tokens: 4096,
       }),
     });
