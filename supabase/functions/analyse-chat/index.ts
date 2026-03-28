@@ -104,6 +104,13 @@ E7 kostnadsoppgjør:
 - Appen beregner hva hver eier skylder eller har til gode.
 - Typiske spørsmål: "Hva skylder David meg?", "Hvem har betalt mest for E7 i 2025?", "Vis kostnadsoppgjør for 2025", "Hva har vi brukt på vedlikehold i år?"
 
+Eierhistorikk:
+- Eierandelene har endret seg over tid basert på investeringsbidrag og avtaler.
+- 7. mars 2025: To justeringer. Først byggekostnadsjustering (David overbidro, Sebastian og Levi underbidro). Deretter konvertering av midler (Sebastian overførte 4,55% til David).
+- Historikken finnes i eier_historikk og eier_historikk_detaljer tabellene.
+- Verdisimulatoren beregner eierverdi basert på boligens totalverdi × eierandel.
+- Typiske spørsmål: "Hva var Davids eierandel i 2024?", "Vis eierhistorikk", "Hva er min andel verdt hvis boligen er verdt 15 mill?", "Hvem har økt sin andel mest?"
+
 ${txSummary}${abSummary}${eiereSummary}${mvSummary}${mvBevSummary}${enheterSummary}${leietakereSummary}${leieforholdSummary}`;
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
