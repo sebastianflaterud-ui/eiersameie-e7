@@ -11,6 +11,7 @@ import {
   Wallet,
   MessageSquare,
   LogOut,
+  Users,
 } from 'lucide-react';
 import { NavLink } from '@/components/NavLink';
 import { useLocation } from 'react-router-dom';
@@ -35,6 +36,7 @@ const navItems = [
   { title: 'Datavasking', url: '/datavasking', icon: Sparkles },
   { title: 'Leieinntekter', url: '/leieinntekter', icon: Home },
   { title: 'Eiersameie E7', url: '/eiersameie', icon: Building },
+  { title: 'Eiere', url: '/eiere', icon: Users },
   { title: 'Abonnementer', url: '/abonnementer', icon: CreditCard },
   { title: 'Skattemeldingsgrunnlag', url: '/skatt', icon: FileText },
   { title: 'Regler', url: '/regler', icon: Settings },
