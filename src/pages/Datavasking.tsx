@@ -258,6 +258,15 @@ export default function Datavasking() {
         <Card><CardContent className="pt-4"><div className="text-2xl font-bold text-blue-600">{stats.foreslått}</div><div className="text-sm text-muted-foreground">Foreslått</div></CardContent></Card>
       </div>
       <Progress value={pct} className="h-2" />
+      {aiClassifying && aiProgress.total > 0 && (
+        <div className="space-y-1">
+          <Progress value={Math.round((aiProgress.done / aiProgress.total) * 100)} className="h-2" />
+          <p className="text-sm text-muted-foreground">
+            <Loader2 className="h-3 w-3 inline animate-spin mr-1" />
+            AI klassifiserer: {aiProgress.done} av {aiProgress.total} transaksjoner...
+          </p>
+        </div>
+      )}
       <p className="text-sm text-muted-foreground">{pct}% klassifisert</p>
 
       <div className="flex items-center gap-2 flex-wrap">
