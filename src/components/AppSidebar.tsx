@@ -35,6 +35,7 @@ import {
 import { Button } from '@/components/ui/button';
 
 const eiersameieItems = [
+  { title: 'Eiere', url: '/eiersameie', icon: Building },
   { title: 'Enheter', url: '/enheter', icon: DoorOpen },
   { title: 'Kalender', url: '/kalender', icon: CalendarDays },
   { title: 'Investeringer', url: '/investeringer', icon: Hammer },
@@ -45,7 +46,6 @@ const utleieItems = [
   { title: 'Leietakere', url: '/leietakere', icon: Users },
   { title: 'Kontrakter', url: '/kontrakter', icon: FileSignature },
   { title: 'Leieinntekter', url: '/leieinntekter', icon: Home },
-  { title: 'Eiersameie', url: '/eiersameie', icon: Building },
   { title: 'Skattemeldingsgrunnlag', url: '/skatt', icon: FileText },
 ];
 
