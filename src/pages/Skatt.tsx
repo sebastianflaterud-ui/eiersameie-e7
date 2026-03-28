@@ -27,6 +27,7 @@ export default function Skatt() {
   const [uklassifisertCount, setUklassifisertCount] = useState(0);
   const [totals, setTotals] = useState({ brutto: 0, fradrag: 0, netto: 0 });
   const [bilagStats, setBilagStats] = useState({ med: 0, uten: 0 });
+  const [manglerUnderlagStats, setManglerUnderlagStats] = useState({ antall: 0, sum: 0 });
   const [mvData, setMvData] = useState<any[]>([]);
   const [mvBevegelser, setMvBevegelser] = useState<any[]>([]);
 
@@ -69,8 +70,10 @@ export default function Skatt() {
       const ikke = skattemessigTxs.filter(t => t.retning === 'ut' && !t.fradragsberettiget);
       setIkkeFradrag(ikke);
       setTotals({ brutto, fradrag: fradragSum, netto: brutto - fradragSum });
-      // Store mangler_underlag info for display
-      (window as any).__manglerUnderlag = manglerUnderlagTxs;
+      setManglerUnderlagStats({
+        antall: manglerUnderlagTxs.length,
+        sum: manglerUnderlagTxs.reduce((s, t) => s + Number(t.belop), 0),
+      });
 
       const txIds = e7Data.map(t => t.id);
       if (txIds.length > 0) {
