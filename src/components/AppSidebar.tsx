@@ -123,11 +123,11 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
 
-        {/* Privatøkonomi */}
+        {/* Økonomi */}
         <SidebarGroup>
-          {!collapsed && <SidebarGroupLabel>Privatøkonomi</SidebarGroupLabel>}
+          {!collapsed && <SidebarGroupLabel>Økonomi</SidebarGroupLabel>}
           <SidebarGroupContent>
-            <SidebarMenu>{renderItems(privatItems)}</SidebarMenu>
+            <SidebarMenu>{renderItems(ekonomiItems)}</SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
 
