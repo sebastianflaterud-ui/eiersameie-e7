@@ -3,10 +3,12 @@ import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
+import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { formatBelop, formatDato } from '@/lib/format';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { useNavigate } from 'react-router-dom';
+import { AlertTriangle, Wrench } from 'lucide-react';
 
 const COLORS = ['hsl(142, 76%, 36%)', 'hsl(0, 84%, 60%)', 'hsl(221, 83%, 53%)', 'hsl(45, 93%, 47%)', 'hsl(280, 67%, 52%)'];
 
@@ -17,6 +19,7 @@ export default function Dashboard() {
   const [monthlyData, setMonthlyData] = useState<{ name: string; inntekter: number; utgifter: number }[]>([]);
   const [categoryData, setCategoryData] = useState<{ inn: { name: string; value: number }[]; ut: { name: string; value: number }[] }>({ inn: [], ut: [] });
   const [recentTx, setRecentTx] = useState<any[]>([]);
+  const [kalenderHendelser, setKalenderHendelser] = useState<any[]>([]);
 
   useEffect(() => {
     async function fetch() {
@@ -64,6 +67,13 @@ export default function Dashboard() {
       // Recent
       const sorted = [...txs].sort((a, b) => b.dato.localeCompare(a.dato)).slice(0, 10);
       setRecentTx(sorted);
+
+      // Kalender
+      const today = new Date().toISOString().slice(0, 10);
+      const horizon = new Date(Date.now() + 60 * 86400000).toISOString().slice(0, 10);
+      const { data: kh } = await supabase.from('kalender_hendelser').select('*')
+        .eq('fullfort', false).gte('dato', today).lte('dato', horizon).order('dato').limit(5);
+      setKalenderHendelser(kh || []);
     }
     fetch();
   }, [year]);
@@ -126,6 +136,28 @@ export default function Dashboard() {
           </CardContent>
         </Card>
       </div>
+
+      {kalenderHendelser.length > 0 && (
+        <Card>
+          <CardHeader><CardTitle className="flex items-center gap-2"><Wrench className="h-4 w-4" />Kommende vedlikehold</CardTitle></CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              {kalenderHendelser.map(h => (
+                <div key={h.id} className="flex items-center justify-between p-2 rounded border">
+                  <div className="flex items-center gap-2">
+                    <span className="font-mono text-xs text-muted-foreground">{formatDato(h.dato)}</span>
+                    <span className="text-sm font-medium">{h.tittel}</span>
+                  </div>
+                  <Badge variant="outline" className={
+                    h.prioritet === 'kritisk' ? 'bg-red-50 text-red-600' :
+                    h.prioritet === 'høy' ? 'bg-orange-50 text-orange-600' : 'bg-blue-50 text-blue-600'
+                  }>{h.prioritet}</Badge>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       <Card>
         <CardHeader><CardTitle>Siste 10 transaksjoner</CardTitle></CardHeader>
