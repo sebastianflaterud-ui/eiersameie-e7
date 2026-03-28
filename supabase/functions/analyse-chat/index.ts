@@ -37,6 +37,9 @@ serve(async (req) => {
     const { data: eiereData } = await supabase.from("eiere").select("*").eq("user_id", user.id);
     const { data: mvDataRows } = await supabase.from("mellomvaerende").select("*").eq("user_id", user.id);
     const { data: mvBevData } = await supabase.from("mellomvaerende_bevegelser").select("*").eq("user_id", user.id).order("dato", { ascending: false }).limit(100);
+    const { data: enheterData } = await supabase.from("enheter").select("*").eq("user_id", user.id);
+    const { data: leietakereData } = await supabase.from("leietakere").select("*").eq("user_id", user.id);
+    const { data: leieforholdData } = await supabase.from("leieforhold").select("*").eq("user_id", user.id);
 
     const txSummary = txData && txData.length > 0
       ? `Transaksjonsdata (${txData.length} rader):\n${JSON.stringify(txData.slice(0, 200), null, 0)}`
