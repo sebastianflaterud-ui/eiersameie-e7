@@ -14,7 +14,7 @@ import { Switch } from '@/components/ui/switch';
 import { Progress } from '@/components/ui/progress';
 import { formatBelop, formatDato } from '@/lib/format';
 import { toast } from 'sonner';
-import { CheckCircle, Upload, Trash2, Paperclip } from 'lucide-react';
+import { CheckCircle, Upload, Trash2, Paperclip, Sparkles, Loader2 } from 'lucide-react';
 
 interface Transaksjon {
   id: string; dato: string; beskrivelse_bank: string; beskrivelse_egen: string | null;
@@ -46,6 +46,7 @@ export default function Datavasking() {
   const [eiere, setEiere] = useState<Eier[]>([]);
   const [bilagList, setBilagList] = useState<Bilag[]>([]);
   const [uploading, setUploading] = useState(false);
+  const [aiClassifying, setAiClassifying] = useState(false);
 
   useEffect(() => {
     supabase.from('eiere').select('id, navn').then(({ data }) => { if (data) setEiere(data as Eier[]); });
@@ -157,6 +158,51 @@ export default function Datavasking() {
     if (detailItem) fetchBilag(detailItem.id);
   };
 
+  const aiClassify = async () => {
+    const toClassify = items.filter(i => i.klassifisering_status !== 'manuell' && i.klassifisering_status !== 'bekreftet');
+    if (toClassify.length === 0) { toast.info('Ingen transaksjoner å klassifisere med AI'); return; }
+
+    setAiClassifying(true);
+    try {
+      const batch = toClassify.slice(0, 25).map(t => ({
+        id: t.id, dato: t.dato, belop: t.belop, retning: t.retning,
+        beskrivelse_bank: t.beskrivelse_bank, motpart_bank: t.motpart_bank, konto: t.konto,
+      }));
+
+      const { data, error } = await supabase.functions.invoke('ai-klassifiser', { body: { transaksjoner: batch } });
+      if (error) throw new Error(error.message || 'AI-feil');
+      if (data?.error) throw new Error(data.error);
+
+      const results = data.results || [];
+      let updated = 0;
+      for (const r of results) {
+        const tx = batch[r.index - 1];
+        if (!tx) continue;
+        const updateData: Record<string, any> = {
+          kategori: r.kategori,
+          klassifisering_status: 'foreslått',
+        };
+        if (r.underkategori) updateData.underkategori = r.underkategori;
+        if (r.motpart_egen) updateData.motpart_egen = r.motpart_egen;
+        if (r.inntektstype) updateData.inntektstype = r.inntektstype;
+        if (r.utgiftstype) updateData.utgiftstype = r.utgiftstype;
+        if (r.leverandor) updateData.leverandor = r.leverandor;
+        if (r.leie_for) updateData.leie_for = r.leie_for;
+        if (r.leieperiode) updateData.leieperiode = r.leieperiode;
+        if (r.enhet) updateData.enhet = r.enhet;
+
+        const { error: upErr } = await supabase.from('transaksjoner').update(updateData as any).eq('id', tx.id);
+        if (!upErr) updated++;
+      }
+      toast.success(`AI klassifiserte ${updated} av ${batch.length} transaksjoner`);
+      fetchItems(); fetchStats();
+    } catch (e: any) {
+      toast.error(e.message || 'AI-klassifisering feilet');
+    } finally {
+      setAiClassifying(false);
+    }
+  };
+
   const pct = stats.total > 0 ? Math.round((stats.klassifisert / stats.total) * 100) : 0;
 
   return (
@@ -172,7 +218,7 @@ export default function Datavasking() {
       <Progress value={pct} className="h-2" />
       <p className="text-sm text-muted-foreground">{pct}% klassifisert</p>
 
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2 flex-wrap">
         <Select value={filter} onValueChange={v => { setFilter(v as FilterType); setPage(0); }}>
           <SelectTrigger className="w-[200px]"><SelectValue /></SelectTrigger>
           <SelectContent>
@@ -182,6 +228,10 @@ export default function Datavasking() {
             <SelectItem value="auto">Kun autoklassifiserte</SelectItem>
           </SelectContent>
         </Select>
+        <Button variant="outline" onClick={aiClassify} disabled={aiClassifying}>
+          {aiClassifying ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Sparkles className="h-4 w-4 mr-1" />}
+          {aiClassifying ? 'Klassifiserer...' : 'AI-klassifiser'}
+        </Button>
         {selected.size > 0 && (
           <div className="flex gap-1 ml-4">
             <span className="text-sm text-muted-foreground mr-2">{selected.size} valgt:</span>
