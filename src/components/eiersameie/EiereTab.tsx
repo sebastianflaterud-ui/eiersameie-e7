@@ -108,9 +108,9 @@ export default function EiereTab() {
         <TabsList>
           <TabsTrigger value="oversikt" className="gap-1.5"><User className="h-4 w-4" />Oversikt</TabsTrigger>
           <TabsTrigger value="leieinntekter" className="gap-1.5">Leieinntekter</TabsTrigger>
-          <TabsTrigger value="verdisimulator" className="gap-1.5"><Building2 className="h-4 w-4" />Verdisimulator</TabsTrigger>
           <TabsTrigger value="historikk" className="gap-1.5"><CalendarIcon className="h-4 w-4" />Historikk</TabsTrigger>
           <TabsTrigger value="registrer" className="gap-1.5"><Plus className="h-4 w-4" />Registrer endring</TabsTrigger>
+          <TabsTrigger value="verdisimulator" className="gap-1.5"><Building2 className="h-4 w-4" />Verdisimulator</TabsTrigger>
         </TabsList>
 
         <TabsContent value="oversikt" className="space-y-6">

@@ -24,7 +24,7 @@ interface Props {
 export default function EiereRegistrerEndring({ aktive, onChanged }: Props) {
   const { user } = useAuth();
   const [regMode, setRegMode] = useState<'enkel' | 'avansert'>('enkel');
-  const [regForm, setRegForm] = useState({ dato: '', type: 'overføring', beskrivelse: '', fra: '', til: '', beregnFraVerdi: true, boligverdi: 10000000, kjopesum: 0, prosent: 0 });
+  const [regForm, setRegForm] = useState({ dato: '', type: 'overføring', beskrivelse: '', fra: '', til: '', beregnFraVerdi: true, boligverdi: 17000000, kjopesum: 0, prosent: 0 });
   const [advAndeler, setAdvAndeler] = useState<Record<string, number>>({});
 
   const enkelPct = regForm.beregnFraVerdi && regForm.boligverdi > 0
@@ -73,7 +73,7 @@ export default function EiereRegistrerEndring({ aktive, onChanged }: Props) {
 
     toast.success('Eierskapsendring registrert');
     onChanged();
-    setRegForm({ dato: '', type: 'overføring', beskrivelse: '', fra: '', til: '', beregnFraVerdi: true, boligverdi: 10000000, kjopesum: 0, prosent: 0 });
+    setRegForm({ dato: '', type: 'overføring', beskrivelse: '', fra: '', til: '', beregnFraVerdi: true, boligverdi: 17000000, kjopesum: 0, prosent: 0 });
   };
 
   const registerAvansert = async () => {

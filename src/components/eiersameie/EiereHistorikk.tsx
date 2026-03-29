@@ -1,6 +1,7 @@
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { CalendarIcon, ArrowRight, TrendingDown, TrendingUp } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { CalendarIcon, ArrowRight, TrendingDown, TrendingUp, Pencil } from 'lucide-react';
 import { format } from 'date-fns';
 import { nb } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
@@ -8,9 +9,10 @@ import { HistorikkEvent, formatPct } from './types';
 
 interface Props {
   historikk: HistorikkEvent[];
+  onEdit?: (event: HistorikkEvent) => void;
 }
 
-export default function EiereHistorikk({ historikk }: Props) {
+export default function EiereHistorikk({ historikk, onEdit }: Props) {
   return (
     <div className="space-y-4">
       {historikk.length === 0 && (
@@ -30,6 +32,11 @@ export default function EiereHistorikk({ historikk }: Props) {
                 <Badge variant="outline" className={cn("font-normal capitalize", ev.type === 'oppstart' && 'bg-green-100 text-green-800 border-green-200')}>
                   {ev.type === 'oppstart' ? 'Opprinnelig' : ev.type === 'overføring' ? 'Overføring' : ev.type === 'justering' ? 'Justering' : ev.type}
                 </Badge>
+                {onEdit && (
+                  <Button variant="ghost" size="sm" className="ml-auto" onClick={() => onEdit(ev)}>
+                    <Pencil className="h-3.5 w-3.5 mr-1" />Rediger
+                  </Button>
+                )}
               </div>
               <p className="text-muted-foreground">{ev.beskrivelse}</p>
 

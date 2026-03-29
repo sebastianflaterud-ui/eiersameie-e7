@@ -13,7 +13,7 @@ interface Props {
 }
 
 export default function EiereVerdisimulator({ aktive, sumEierandel }: Props) {
-  const [totalVerdi, setTotalVerdi] = useState(10000000);
+  const [totalVerdi, setTotalVerdi] = useState(17000000);
 
   return (
     <div className="space-y-6">
@@ -25,8 +25,8 @@ export default function EiereVerdisimulator({ aktive, sumEierandel }: Props) {
             <span className="text-muted-foreground">kr</span>
           </div>
           <div className="flex gap-2 flex-wrap">
-            {[5000000, 7500000, 10000000, 12500000, 15000000, 20000000].map(v => (
-              <Button key={v} variant={totalVerdi === v ? 'default' : 'outline'} size="sm" onClick={() => setTotalVerdi(v)}>
+            {[5000000, 7500000, 10000000, 12500000, 15000000, 17000000, 20000000].map(v => (
+              <Button key={v} variant={totalVerdi === v ? 'secondary' : 'outline'} size="sm" onClick={() => setTotalVerdi(v)}>
                 {(v / 1000000).toFixed(v % 1000000 === 0 ? 0 : 1)} mill
               </Button>
             ))}
