@@ -121,16 +121,16 @@ export default function EiereTab() {
           <EiereLeieinntekter aktive={aktive} />
         </TabsContent>
 
-        <TabsContent value="verdisimulator" className="space-y-6">
-          <EiereVerdisimulator aktive={aktive} sumEierandel={sumEierandel} />
-        </TabsContent>
-
         <TabsContent value="historikk" className="space-y-4">
-          <EiereHistorikk historikk={historikk} />
+          <EiereHistorikk historikk={historikk} onEdit={(ev) => { toast.info('Redigering av historikk er under utvikling'); }} />
         </TabsContent>
 
         <TabsContent value="registrer" className="space-y-6">
           <EiereRegistrerEndring aktive={aktive} onChanged={handleChanged} />
+        </TabsContent>
+
+        <TabsContent value="verdisimulator" className="space-y-6">
+          <EiereVerdisimulator aktive={aktive} sumEierandel={sumEierandel} />
         </TabsContent>
       </Tabs>
 
