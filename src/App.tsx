@@ -6,7 +6,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider, useAuth } from "@/hooks/useAuth";
 import { AppLayout } from "@/components/AppLayout";
 import Auth from "./pages/Auth";
-import Dashboard from "./pages/Dashboard";
+import Oversikt from "./pages/Oversikt";
 import Transaksjoner from "./pages/Transaksjoner";
 import Import from "./pages/Import";
 import Datavasking from "./pages/Datavasking";
@@ -25,7 +25,7 @@ import Kontoer from "./pages/Kontoer";
 import Chat from "./pages/Chat";
 import Mellomvaerende from "./pages/Mellomvaerende";
 import Investeringer from "./pages/Investeringer";
-import NotFound from "./pages/NotFound";
+import IkkeFunnet from "./pages/IkkeFunnet";
 
 const queryClient = new QueryClient();
 
