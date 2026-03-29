@@ -481,7 +481,10 @@ export default function EiereTab() {
 
         <TabsContent value="registrer" className="space-y-6">
           <div className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold">Registrer eierskapsendring</h2>
+            <div>
+              <h2 className="text-xl font-bold">Registrer eierskapsendring</h2>
+              <p className="text-sm text-muted-foreground">Fyll ut feltene under for å registrere en overføring av eierandeler</p>
+            </div>
             <div className="flex items-center gap-2">
               <Label className="text-sm">Avansert</Label>
               <Switch checked={regMode === 'avansert'} onCheckedChange={v => { setRegMode(v ? 'avansert' : 'enkel'); if (v) { const m: Record<string, number> = {}; aktive.forEach(e => m[e.navn] = e.eierandel_prosent); setAdvAndeler(m); } }} />
