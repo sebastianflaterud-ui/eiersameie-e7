@@ -466,7 +466,7 @@ export default function EiereTab() {
                             </div>
                           </div>
                           <div className="flex items-center gap-2 text-sm font-mono">
-                            <span className="text-muted-foreground">{formatPct(d.andel_for)}</span>
+                            <span className="text-muted-foreground">{d.andel_for === 0 ? '-' : formatPct(d.andel_for)}</span>
                             <ArrowRight className="h-3 w-3 text-muted-foreground" />
                             <span className="font-bold">{formatPct(d.andel_etter)}</span>
                             {endring !== 0 && (
