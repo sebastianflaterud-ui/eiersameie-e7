@@ -70,7 +70,7 @@ export default function EiereLeieinntekter({ aktive }: Props) {
         </CardContent></Card>
         <Card><CardContent className="pt-4">
           <div className={`text-2xl font-bold ${netto >= 0 ? 'text-green-600' : 'text-red-600'}`}>{formatBelop(netto)}</div>
-          <div className="text-sm text-muted-foreground">Netto resultat</div>
+          <div className="text-sm text-muted-foreground">Resultat</div>
         </CardContent></Card>
       </div>
 
@@ -83,7 +83,7 @@ export default function EiereLeieinntekter({ aktive }: Props) {
                 <TableHead className="text-right">Andel</TableHead>
                 <TableHead className="text-right">Andel av inntekter</TableHead>
                 <TableHead className="text-right">Andel av kostnader</TableHead>
-                <TableHead className="text-right">Netto andel</TableHead>
+                <TableHead className="text-right">Resultat</TableHead>
                 <TableHead className="text-right">Faktisk mottatt</TableHead>
                 <TableHead className="text-right">Differanse</TableHead>
               </TableRow>
