@@ -153,8 +153,8 @@ export default function EiereLeieinntekter({ aktive }: Props) {
                 <TableHead rowSpan={2}>Måned</TableHead>
                 <TableHead rowSpan={2} className="text-right">Inntekter</TableHead>
                 <TableHead rowSpan={2} className="text-right">Kostnader</TableHead>
-                <TableHead colSpan={aktive.length} className="text-center border-b-0 text-xs text-muted-foreground">Resultat per eier</TableHead>
-                <TableHead rowSpan={2} className="text-right">Totalt</TableHead>
+                <TableHead rowSpan={2} className="text-right">Resultat</TableHead>
+                <TableHead colSpan={aktive.length} className="text-center border-b-0 text-xs text-muted-foreground">Fordeling per eier</TableHead>
               </TableRow>
               <TableRow>
                 {aktive.map(e => (
