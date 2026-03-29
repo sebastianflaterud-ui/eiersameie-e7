@@ -13,7 +13,7 @@ import { AlertTriangle, Wrench } from 'lucide-react';
 
 const COLORS = ['hsl(142, 76%, 36%)', 'hsl(0, 84%, 60%)', 'hsl(221, 83%, 53%)', 'hsl(45, 93%, 47%)', 'hsl(280, 67%, 52%)'];
 
-export default function Dashboard() {
+export default function Oversikt() {
   const navigate = useNavigate();
   const [year, setYear] = useState(new Date().getFullYear());
   const [stats, setStats] = useState({ inntekter: 0, utgifter: 0, uklassifisert: 0 });
@@ -82,7 +82,7 @@ export default function Dashboard() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Dashboard</h1>
+        <h1 className="text-2xl font-bold">Oversikt</h1>
         <YearSelect value={year} onChange={setYear} />
       </div>
 

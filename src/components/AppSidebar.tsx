@@ -102,7 +102,7 @@ export function AppSidebar() {
         <SidebarGroup>
           <SidebarGroupContent>
             <SidebarMenu>
-              {renderItems([{ title: 'Dashboard', url: '/', icon: LayoutDashboard }])}
+              {renderItems([{ title: 'Oversikt', url: '/', icon: LayoutDashboard }])}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>

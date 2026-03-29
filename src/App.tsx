@@ -6,7 +6,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider, useAuth } from "@/hooks/useAuth";
 import { AppLayout } from "@/components/AppLayout";
 import Auth from "./pages/Auth";
-import Dashboard from "./pages/Dashboard";
+import Oversikt from "./pages/Oversikt";
 import Transaksjoner from "./pages/Transaksjoner";
 import Import from "./pages/Import";
 import Datavasking from "./pages/Datavasking";
@@ -25,7 +25,7 @@ import Kontoer from "./pages/Kontoer";
 import Chat from "./pages/Chat";
 import Mellomvaerende from "./pages/Mellomvaerende";
 import Investeringer from "./pages/Investeringer";
-import NotFound from "./pages/NotFound";
+import IkkeFunnet from "./pages/IkkeFunnet";
 
 const queryClient = new QueryClient();
 
@@ -47,7 +47,7 @@ function ProtectedRoutes() {
   return (
     <AppLayout>
       <Routes>
-        <Route path="/" element={<Dashboard />} />
+        <Route path="/" element={<Oversikt />} />
         <Route path="/transaksjoner" element={<Transaksjoner />} />
         <Route path="/import" element={<Import />} />
         <Route path="/datavasking" element={<Datavasking />} />
@@ -65,7 +65,7 @@ function ProtectedRoutes() {
         <Route path="/regler" element={<Regler />} />
         <Route path="/kontoer" element={<Kontoer />} />
         <Route path="/chat" element={<Chat />} />
-        <Route path="*" element={<NotFound />} />
+        <Route path="*" element={<IkkeFunnet />} />
       </Routes>
     </AppLayout>
   );
