@@ -13,10 +13,15 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Slider } from '@/components/ui/slider';
-import { AlertTriangle, Check, Plus, Pencil, Trash2, Building2, User, ArrowDown, ArrowUp } from 'lucide-react';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
+import { AlertTriangle, Check, Plus, Pencil, Trash2, Building2, User, ArrowDown, ArrowUp, CalendarIcon, ArrowRight, TrendingDown, TrendingUp } from 'lucide-react';
 import { toast } from 'sonner';
 import { formatBelop } from '@/lib/format';
+import { format, parse } from 'date-fns';
+import { nb } from 'date-fns/locale';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip as ReTooltip } from 'recharts';
+import { cn } from '@/lib/utils';
 
 interface Eier {
   id: string; navn: string; type: string; orgnr: string | null; identifikator: string | null;
@@ -400,59 +405,74 @@ export default function EiereTab() {
           {historikk.map(ev => {
             const gains = ev.detaljer.filter(d => d.andel_etter > d.andel_for);
             const losses = ev.detaljer.filter(d => d.andel_etter < d.andel_for);
+            const totalGain = gains.reduce((s, d) => s + (d.andel_etter - d.andel_for), 0);
             return (
               <Card key={ev.id}>
-                <CardContent className="pt-4 space-y-3">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <span className="font-mono text-sm">{ev.dato}</span>
-                      <Badge variant="outline">{ev.type}</Badge>
-                    </div>
-                    <span className="font-medium">{ev.beskrivelse}</span>
+                <CardContent className="pt-5 space-y-4">
+                  {/* Header */}
+                  <div className="flex items-center gap-3">
+                    <CalendarIcon className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-lg font-semibold">
+                      {format(new Date(ev.dato), 'd. MMMM yyyy', { locale: nb })}
+                    </span>
+                    <Badge variant="outline" className="font-normal capitalize">{ev.type}</Badge>
                   </div>
+                  <p className="text-muted-foreground">{ev.beskrivelse}</p>
 
+                  {/* Visual summary */}
                   {(gains.length > 0 || losses.length > 0) && (
-                    <div className="flex gap-4 text-sm">
-                      {losses.map(d => (
-                        <span key={d.eier_navn} className="flex items-center gap-1 text-red-600">
-                          <ArrowDown className="h-3 w-3" />{d.eier_navn.split(' ')[0]} -{formatPct(d.andel_for - d.andel_etter)}
-                        </span>
-                      ))}
-                      {gains.map(d => (
-                        <span key={d.eier_navn} className="flex items-center gap-1 text-green-600">
-                          <ArrowUp className="h-3 w-3" />{d.eier_navn.split(' ')[0]} +{formatPct(d.andel_etter - d.andel_for)}
-                        </span>
-                      ))}
+                    <div className="flex items-center gap-4 p-3 bg-muted/50 rounded-lg flex-wrap">
+                      <div className="flex flex-col gap-1">
+                        {losses.map(d => (
+                          <span key={d.eier_navn} className="flex items-center gap-1.5 text-sm font-medium text-red-600">
+                            <TrendingDown className="h-4 w-4" />
+                            {d.eier_navn} <span className="font-bold">-{formatPct(d.andel_for - d.andel_etter)}</span>
+                          </span>
+                        ))}
+                      </div>
+                      {losses.length > 0 && gains.length > 0 && (
+                        <ArrowRight className="h-5 w-5 text-muted-foreground" />
+                      )}
+                      <div className="flex flex-col gap-1">
+                        {gains.map(d => (
+                          <span key={d.eier_navn} className="flex items-center gap-1.5 text-sm font-medium text-green-600">
+                            <TrendingUp className="h-4 w-4" />
+                            {d.eier_navn} <span className="font-bold">+{formatPct(d.andel_etter - d.andel_for)}</span>
+                          </span>
+                        ))}
+                      </div>
                     </div>
                   )}
 
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Eier</TableHead>
-                        <TableHead className="text-right">Før</TableHead>
-                        <TableHead className="text-right">Etter</TableHead>
-                        <TableHead className="text-right">Endring</TableHead>
-                        <TableHead>Merknad</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {ev.detaljer.map(d => {
-                        const endring = d.andel_etter - d.andel_for;
-                        return (
-                          <TableRow key={d.id}>
-                            <TableCell className="font-medium">{d.eier_navn}</TableCell>
-                            <TableCell className="text-right font-mono">{formatPct(d.andel_for)}</TableCell>
-                            <TableCell className="text-right font-mono">{formatPct(d.andel_etter)}</TableCell>
-                            <TableCell className={`text-right font-mono font-bold ${endring > 0 ? 'text-green-600' : endring < 0 ? 'text-red-600' : ''}`}>
-                              {endring > 0 ? '+' : ''}{formatPct(endring)}
-                            </TableCell>
-                            <TableCell className="text-sm text-muted-foreground">{d.merknad || '-'}</TableCell>
-                          </TableRow>
-                        );
-                      })}
-                    </TableBody>
-                  </Table>
+                  {/* Detail cards */}
+                  <div className="space-y-2">
+                    {ev.detaljer.map(d => {
+                      const endring = d.andel_etter - d.andel_for;
+                      return (
+                        <div key={d.id} className="flex items-center justify-between p-3 bg-muted/30 rounded-lg border">
+                          <div className="flex items-center gap-3">
+                            {endring < 0 && <TrendingDown className="h-4 w-4 text-red-500" />}
+                            {endring > 0 && <TrendingUp className="h-4 w-4 text-green-500" />}
+                            {endring === 0 && <div className="h-4 w-4" />}
+                            <div>
+                              <div className="font-medium">{d.eier_navn}</div>
+                              <div className="text-xs text-muted-foreground">{d.merknad || 'Uendret'}</div>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2 text-sm font-mono">
+                            <span className="text-muted-foreground">{formatPct(d.andel_for)}</span>
+                            <ArrowRight className="h-3 w-3 text-muted-foreground" />
+                            <span className="font-bold">{formatPct(d.andel_etter)}</span>
+                            {endring !== 0 && (
+                              <span className={cn("font-bold ml-1", endring > 0 ? 'text-green-600' : 'text-red-600')}>
+                                ({endring > 0 ? '+' : ''}{formatPct(endring)})
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
                 </CardContent>
               </Card>
             );
@@ -461,7 +481,10 @@ export default function EiereTab() {
 
         <TabsContent value="registrer" className="space-y-6">
           <div className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold">Registrer eierskapsendring</h2>
+            <div>
+              <h2 className="text-xl font-bold">Registrer eierskapsendring</h2>
+              <p className="text-sm text-muted-foreground">Fyll ut feltene under for å registrere en overføring av eierandeler</p>
+            </div>
             <div className="flex items-center gap-2">
               <Label className="text-sm">Avansert</Label>
               <Switch checked={regMode === 'avansert'} onCheckedChange={v => { setRegMode(v ? 'avansert' : 'enkel'); if (v) { const m: Record<string, number> = {}; aktive.forEach(e => m[e.navn] = e.eierandel_prosent); setAdvAndeler(m); } }} />
@@ -471,7 +494,26 @@ export default function EiereTab() {
           <Card>
             <CardContent className="pt-6 space-y-4">
               <div className="grid grid-cols-3 gap-3">
-                <div className="space-y-1"><Label>Virkningsdato</Label><Input type="date" value={regForm.dato} onChange={e => setRegForm(p => ({ ...p, dato: e.target.value }))} /></div>
+                <div className="space-y-1">
+                  <Label>Virkningsdato</Label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button variant="outline" className={cn("w-full justify-start text-left font-normal", !regForm.dato && "text-muted-foreground")}>
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {regForm.dato ? format(new Date(regForm.dato), 'd. MMMM yyyy', { locale: nb }) : 'Velg dato'}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={regForm.dato ? new Date(regForm.dato) : undefined}
+                        onSelect={d => setRegForm(p => ({ ...p, dato: d ? format(d, 'yyyy-MM-dd') : '' }))}
+                        locale={nb}
+                        initialFocus
+                      />
+                    </PopoverContent>
+                  </Popover>
+                </div>
                 <div className="space-y-1">
                   <Label>Type</Label>
                   <Select value={regForm.type} onValueChange={v => setRegForm(p => ({ ...p, type: v }))}>
@@ -611,8 +653,34 @@ export default function EiereTab() {
               <div className="space-y-1"><Label>Kostnadsandel %</Label><Input type="number" step="0.01" value={form.kostnadsandel_prosent} onChange={e => setForm(p => ({ ...p, kostnadsandel_prosent: Number(e.target.value) }))} /></div>
             </div>
             <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1"><Label>Gyldig fra</Label><Input type="date" value={form.gyldig_fra} onChange={e => setForm(p => ({ ...p, gyldig_fra: e.target.value }))} /></div>
-              <div className="space-y-1"><Label>Gyldig til</Label><Input type="date" value={form.gyldig_til} onChange={e => setForm(p => ({ ...p, gyldig_til: e.target.value }))} /></div>
+              <div className="space-y-1">
+                <Label>Gyldig fra</Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" className={cn("w-full justify-start text-left font-normal", !form.gyldig_fra && "text-muted-foreground")}>
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {form.gyldig_fra ? format(new Date(form.gyldig_fra), 'd. MMM yyyy', { locale: nb }) : 'Velg dato'}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar mode="single" selected={form.gyldig_fra ? new Date(form.gyldig_fra) : undefined} onSelect={d => setForm(p => ({ ...p, gyldig_fra: d ? format(d, 'yyyy-MM-dd') : '' }))} locale={nb} initialFocus />
+                  </PopoverContent>
+                </Popover>
+              </div>
+              <div className="space-y-1">
+                <Label>Gyldig til</Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" className={cn("w-full justify-start text-left font-normal", !form.gyldig_til && "text-muted-foreground")}>
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {form.gyldig_til ? format(new Date(form.gyldig_til), 'd. MMM yyyy', { locale: nb }) : 'Velg dato'}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar mode="single" selected={form.gyldig_til ? new Date(form.gyldig_til) : undefined} onSelect={d => setForm(p => ({ ...p, gyldig_til: d ? format(d, 'yyyy-MM-dd') : '' }))} locale={nb} initialFocus />
+                  </PopoverContent>
+                </Popover>
+              </div>
             </div>
             <div className="flex items-center gap-2"><Switch checked={form.aktiv} onCheckedChange={v => setForm(p => ({ ...p, aktiv: v }))} /><Label>Aktiv</Label></div>
             <div className="space-y-1"><Label>Notater</Label><Textarea value={form.notater} onChange={e => setForm(p => ({ ...p, notater: e.target.value }))} /></div>
