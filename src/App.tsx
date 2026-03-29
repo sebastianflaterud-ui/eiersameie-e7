@@ -47,7 +47,7 @@ function ProtectedRoutes() {
   return (
     <AppLayout>
       <Routes>
-        <Route path="/" element={<Dashboard />} />
+        <Route path="/" element={<Oversikt />} />
         <Route path="/transaksjoner" element={<Transaksjoner />} />
         <Route path="/import" element={<Import />} />
         <Route path="/datavasking" element={<Datavasking />} />
@@ -65,7 +65,7 @@ function ProtectedRoutes() {
         <Route path="/regler" element={<Regler />} />
         <Route path="/kontoer" element={<Kontoer />} />
         <Route path="/chat" element={<Chat />} />
-        <Route path="*" element={<NotFound />} />
+        <Route path="*" element={<IkkeFunnet />} />
       </Routes>
     </AppLayout>
   );
