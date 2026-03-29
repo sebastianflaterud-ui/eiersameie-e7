@@ -62,11 +62,11 @@ export default function EiereLeieinntekter({ aktive }: Props) {
       <div className="grid grid-cols-3 gap-4">
         <Card><CardContent className="pt-4">
           <div className="text-2xl font-bold text-green-600">{formatBelop(brutto)}</div>
-          <div className="text-sm text-muted-foreground">Brutto leieinntekter</div>
+          <div className="text-sm text-muted-foreground">Leieinntekter</div>
         </CardContent></Card>
         <Card><CardContent className="pt-4">
           <div className="text-2xl font-bold text-red-600">{formatBelop(totalKostnader)}</div>
-          <div className="text-sm text-muted-foreground">Totale kostnader</div>
+          <div className="text-sm text-muted-foreground">Kostnader</div>
         </CardContent></Card>
         <Card><CardContent className="pt-4">
           <div className={`text-2xl font-bold ${netto >= 0 ? 'text-green-600' : 'text-red-600'}`}>{formatBelop(netto)}</div>
