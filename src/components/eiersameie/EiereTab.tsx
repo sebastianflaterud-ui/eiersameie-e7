@@ -3,39 +3,26 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
-import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Slider } from '@/components/ui/slider';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
-import { AlertTriangle, Check, Plus, Pencil, Trash2, Building2, User, ArrowDown, ArrowUp, CalendarIcon, ArrowRight, TrendingDown, TrendingUp } from 'lucide-react';
+import { Plus, Pencil, Trash2, Building2, User, CalendarIcon } from 'lucide-react';
 import { toast } from 'sonner';
-import { formatBelop } from '@/lib/format';
-import { format, parse } from 'date-fns';
+import { format } from 'date-fns';
 import { nb } from 'date-fns/locale';
-import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip as ReTooltip } from 'recharts';
 import { cn } from '@/lib/utils';
 
-interface Eier {
-  id: string; navn: string; type: string; orgnr: string | null; identifikator: string | null;
-  epost: string | null; telefon: string | null; eierandel_prosent: number;
-  inntektsandel_prosent: number; kostnadsandel_prosent: number; aktiv: boolean | null;
-  gyldig_fra: string | null; gyldig_til: string | null; notater: string | null; sist_endret: string | null;
-}
-
-interface HistorikkEvent {
-  id: string; dato: string; type: string; beskrivelse: string;
-  detaljer: { id: string; eier_navn: string; andel_for: number; andel_etter: number; merknad: string | null }[];
-}
-
-const COLORS = ['hsl(221, 83%, 53%)', 'hsl(142, 71%, 45%)', 'hsl(280, 67%, 55%)', 'hsl(38, 92%, 50%)'];
+import { Eier, HistorikkEvent } from './types';
+import EiereOversikt from './EiereOversikt';
+import EiereLeieinntekter from './EiereLeieinntekter';
+import EiereVerdisimulator from './EiereVerdisimulator';
+import EiereHistorikk from './EiereHistorikk';
+import EiereRegistrerEndring from './EiereRegistrerEndring';
 
 const emptyForm = {
   navn: '', type: 'privatperson', orgnr: '', identifikator: '', epost: '', telefon: '',
@@ -50,17 +37,7 @@ export default function EiereTab() {
   const [editId, setEditId] = useState<string | null>(null);
   const [form, setForm] = useState(emptyForm);
   const [tab, setTab] = useState('oversikt');
-
-  const [liYear, setLiYear] = useState(new Date().getFullYear());
-  const [liData, setLiData] = useState<{ brutto: number; oppgjor: Record<string, number> }>({ brutto: 0, oppgjor: {} });
-
-  const [totalVerdi, setTotalVerdi] = useState(10000000);
-
   const [historikk, setHistorikk] = useState<HistorikkEvent[]>([]);
-
-  const [regMode, setRegMode] = useState<'enkel' | 'avansert'>('enkel');
-  const [regForm, setRegForm] = useState({ dato: '', type: 'overføring', beskrivelse: '', fra: '', til: '', beregnFraVerdi: true, boligverdi: 10000000, kjopesum: 0, prosent: 0 });
-  const [advAndeler, setAdvAndeler] = useState<Record<string, number>>({});
 
   const fetchEiere = async () => {
     const { data } = await supabase.from('eiere').select('*').order('opprettet');
@@ -78,29 +55,7 @@ export default function EiereTab() {
     setHistorikk(mapped);
   };
 
-  const fetchLeieinntekter = async () => {
-    const { data } = await supabase.from('transaksjoner').select('*')
-      .eq('kategori', 'Eiersameie E7').eq('retning', 'inn')
-      .gte('dato', `${liYear}-01-01`).lte('dato', `${liYear}-12-31`);
-    const brutto = (data || []).filter(t => !t.er_oppgjor).reduce((s, t) => s + Number(t.belop), 0);
-    const oppgjorTxs = (data || []).filter(t => t.er_oppgjor);
-    const oppgjor: Record<string, number> = {};
-    for (const t of oppgjorTxs) {
-      const til = (t as any).oppgjor_til || 'Ukjent';
-      oppgjor[til] = (oppgjor[til] || 0) + Number(t.belop);
-    }
-    const { data: utData } = await supabase.from('transaksjoner').select('*')
-      .eq('kategori', 'Eiersameie E7').eq('retning', 'ut')
-      .gte('dato', `${liYear}-01-01`).lte('dato', `${liYear}-12-31`);
-    for (const t of (utData || []).filter(t => t.er_oppgjor)) {
-      const til = (t as any).oppgjor_til || 'Ukjent';
-      oppgjor[til] = (oppgjor[til] || 0) + Number(t.belop);
-    }
-    setLiData({ brutto, oppgjor });
-  };
-
   useEffect(() => { fetchEiere(); fetchHistorikk(); }, []);
-  useEffect(() => { fetchLeieinntekter(); }, [liYear]);
 
   const aktive = eiere.filter(e => e.aktiv);
   const sumEierandel = aktive.reduce((s, e) => s + Number(e.eierandel_prosent), 0);
@@ -145,92 +100,7 @@ export default function EiereTab() {
     toast.success('Eier slettet'); fetchEiere();
   };
 
-  const formatPct = (n: number) => n.toFixed(2).replace('.', ',') + ' %';
-  const formatPct4 = (n: number) => n.toFixed(4).replace('.', ',') + ' %';
-
-  const registerEnkel = async () => {
-    if (!user || !regForm.dato || !regForm.fra || !regForm.til) { toast.error('Fyll inn alle felter'); return; }
-    const pct = regForm.beregnFraVerdi
-      ? (regForm.kjopesum / regForm.boligverdi) * 100
-      : regForm.prosent;
-    if (pct <= 0) { toast.error('Prosent må være > 0'); return; }
-    const fraEier = aktive.find(e => e.navn === regForm.fra);
-    const tilEier = aktive.find(e => e.navn === regForm.til);
-    if (!fraEier || !tilEier) { toast.error('Ugyldig eier'); return; }
-    if (fraEier.eierandel_prosent < pct) { toast.error(`${fraEier.navn} har kun ${formatPct(fraEier.eierandel_prosent)}`); return; }
-
-    const { data: hist, error: hErr } = await supabase.from('eier_historikk').insert({
-      user_id: user.id, dato: regForm.dato, type: regForm.type as any, beskrivelse: regForm.beskrivelse,
-    }).select().single();
-    if (hErr || !hist) { toast.error(hErr?.message || 'Feil'); return; }
-
-    const detaljer = aktive.map(e => ({
-      user_id: user.id, historikk_id: (hist as any).id, eier_navn: e.navn,
-      andel_for: e.eierandel_prosent,
-      andel_etter: e.navn === regForm.fra ? e.eierandel_prosent - pct
-        : e.navn === regForm.til ? e.eierandel_prosent + pct
-        : e.eierandel_prosent,
-      merknad: e.navn === regForm.fra ? `Overført ${formatPct(pct)} til ${regForm.til}`
-        : e.navn === regForm.til ? `Mottatt ${formatPct(pct)} fra ${regForm.fra}`
-        : 'Uendret',
-    }));
-    await supabase.from('eier_historikk_detaljer').insert(detaljer);
-
-    await supabase.from('eiere').update({
-      eierandel_prosent: fraEier.eierandel_prosent - pct,
-      kostnadsandel_prosent: fraEier.kostnadsandel_prosent - pct,
-      sist_endret: regForm.dato,
-    } as any).eq('id', fraEier.id);
-    await supabase.from('eiere').update({
-      eierandel_prosent: tilEier.eierandel_prosent + pct,
-      kostnadsandel_prosent: tilEier.kostnadsandel_prosent + pct,
-      sist_endret: regForm.dato,
-    } as any).eq('id', tilEier.id);
-
-    toast.success('Eierskapsendring registrert');
-    fetchEiere(); fetchHistorikk();
-    setRegForm({ dato: '', type: 'overføring', beskrivelse: '', fra: '', til: '', beregnFraVerdi: true, boligverdi: 10000000, kjopesum: 0, prosent: 0 });
-  };
-
-  const registerAvansert = async () => {
-    if (!user || !regForm.dato) { toast.error('Velg dato'); return; }
-    const sumNy = Object.values(advAndeler).reduce((s, v) => s + v, 0);
-    if (Math.abs(sumNy - 100) > 0.01) { toast.error(`Total andel er ${formatPct(sumNy)}, må være 100,00 %`); return; }
-
-    const { data: hist, error: hErr } = await supabase.from('eier_historikk').insert({
-      user_id: user.id, dato: regForm.dato, type: regForm.type as any, beskrivelse: regForm.beskrivelse,
-    }).select().single();
-    if (hErr || !hist) { toast.error(hErr?.message || 'Feil'); return; }
-
-    const detaljer = aktive.map(e => ({
-      user_id: user.id, historikk_id: (hist as any).id, eier_navn: e.navn,
-      andel_for: e.eierandel_prosent,
-      andel_etter: advAndeler[e.navn] ?? e.eierandel_prosent,
-      merknad: advAndeler[e.navn] !== undefined && advAndeler[e.navn] !== e.eierandel_prosent ? 'Endret' : 'Uendret',
-    }));
-    await supabase.from('eier_historikk_detaljer').insert(detaljer);
-
-    for (const e of aktive) {
-      const ny = advAndeler[e.navn];
-      if (ny !== undefined && ny !== e.eierandel_prosent) {
-        await supabase.from('eiere').update({
-          eierandel_prosent: ny, kostnadsandel_prosent: ny, sist_endret: regForm.dato,
-        } as any).eq('id', e.id);
-      }
-    }
-
-    toast.success('Eierskapsendring registrert');
-    fetchEiere(); fetchHistorikk();
-  };
-
-  const enkelPct = regForm.beregnFraVerdi && regForm.boligverdi > 0
-    ? (regForm.kjopesum / regForm.boligverdi) * 100
-    : regForm.prosent;
-
-  const pieData = aktive.map((e, i) => ({ name: e.navn, value: e.eierandel_prosent, fill: COLORS[i % COLORS.length] }));
-
-  const advSum = Object.values(advAndeler).reduce((s, v) => s + v, 0);
-  const advSumOk = Math.abs(advSum - 100) < 0.01;
+  const handleChanged = () => { fetchEiere(); fetchHistorikk(); };
 
   return (
     <div className="space-y-6 mt-4">
@@ -248,386 +118,27 @@ export default function EiereTab() {
         </TabsList>
 
         <TabsContent value="oversikt" className="space-y-6">
-          {sumEierandel !== 100 && aktive.length > 0 && (
-            <div className="flex items-center gap-2 p-3 bg-red-50 border border-red-200 rounded-lg">
-              <AlertTriangle className="h-5 w-5 text-red-500" />
-              <span className="text-red-700">Eierandeler summerer til {formatPct(sumEierandel)}. Skal være 100,00 %.</span>
-            </div>
-          )}
-
-          <div className="grid grid-cols-3 gap-4">
-            <Card><CardContent className="pt-4"><div className="text-2xl font-bold">{aktive.length}</div><div className="text-sm text-muted-foreground">Aktive eiere</div></CardContent></Card>
-            <Card><CardContent className="pt-4">
-              <div className="text-2xl font-bold flex items-center gap-2">
-                {formatPct(sumEierandel)}
-                {Math.abs(sumEierandel - 100) < 0.01 && <Check className="h-5 w-5 text-green-600" />}
-              </div>
-              <div className="text-sm text-muted-foreground">Total eierandel</div>
-            </CardContent></Card>
-            <Card><CardContent className="pt-4">
-              <div className="text-2xl font-bold">{sumInntekt === 100 && sumKostnad === 100 ? <span className="text-green-600">OK</span> : <span className="text-red-600">Avvik</span>}</div>
-              <div className="text-sm text-muted-foreground">Fordelingsstatus</div>
-            </CardContent></Card>
-          </div>
-
-          <div className="grid grid-cols-2 gap-6">
-            <Card>
-              <CardHeader><CardTitle>Eierfordeling</CardTitle></CardHeader>
-              <CardContent>
-                <ResponsiveContainer width="100%" height={250}>
-                  <PieChart>
-                    <Pie data={pieData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={100} label={({ name, value }) => `${name.split(' ')[0]} ${formatPct(value)}`}>
-                      {pieData.map((entry, i) => <Cell key={i} fill={entry.fill} />)}
-                    </Pie>
-                    <ReTooltip formatter={(v: number) => formatPct(v)} />
-                  </PieChart>
-                </ResponsiveContainer>
-              </CardContent>
-            </Card>
-
-            <div className="space-y-3">
-              {aktive.map((e, i) => (
-                <Card key={e.id} className="cursor-pointer hover:border-primary/50 transition-colors" onClick={() => openEdit(e)}>
-                  <CardContent className="pt-4 flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="h-10 w-10 rounded-full flex items-center justify-center" style={{ backgroundColor: COLORS[i % COLORS.length] + '20', color: COLORS[i % COLORS.length] }}>
-                        {e.type === 'aksjeselskap' ? <Building2 className="h-5 w-5" /> : <User className="h-5 w-5" />}
-                      </div>
-                      <div>
-                        <div className="font-medium">{e.navn}</div>
-                        <div className="text-xs text-muted-foreground">{e.identifikator || '-'} · {e.epost || '-'}</div>
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <div className="text-xl font-bold" style={{ color: COLORS[i % COLORS.length] }}>{formatPct(e.eierandel_prosent)}</div>
-                      <div className="text-xs text-muted-foreground">{e.sist_endret ? `Sist endret ${e.sist_endret}` : ''}</div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-              <Button onClick={openNew} variant="outline" className="w-full"><Plus className="h-4 w-4 mr-1" />Legg til eier</Button>
-            </div>
-          </div>
+          <EiereOversikt aktive={aktive} sumEierandel={sumEierandel} sumInntekt={sumInntekt} sumKostnad={sumKostnad} onOpenNew={openNew} onOpenEdit={openEdit} />
         </TabsContent>
 
         <TabsContent value="leieinntekter" className="space-y-6">
-          <div className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold">Fordeling av leieinntekter per eier</h2>
-            <Select value={String(liYear)} onValueChange={v => setLiYear(Number(v))}>
-              <SelectTrigger className="w-[100px]"><SelectValue /></SelectTrigger>
-              <SelectContent>
-                {[2023, 2024, 2025, 2026].map(y => <SelectItem key={y} value={String(y)}>{y}</SelectItem>)}
-              </SelectContent>
-            </Select>
-          </div>
-          <Card>
-            <CardContent className="pt-6">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Eier</TableHead>
-                    <TableHead className="text-right">Inntektsandel</TableHead>
-                    <TableHead className="text-right">Brutto leieinntekt</TableHead>
-                    <TableHead className="text-right">Eiers andel</TableHead>
-                    <TableHead className="text-right">Faktisk mottatt</TableHead>
-                    <TableHead className="text-right">Differanse</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {aktive.map(e => {
-                    const andel = Math.round(liData.brutto * e.inntektsandel_prosent / 100);
-                    const mottatt = liData.oppgjor[e.navn] || 0;
-                    const diff = mottatt - andel;
-                    return (
-                      <TableRow key={e.id}>
-                        <TableCell className="font-medium">{e.navn}</TableCell>
-                        <TableCell className="text-right font-mono">{formatPct(e.inntektsandel_prosent)}</TableCell>
-                        <TableCell className="text-right font-mono">{formatBelop(liData.brutto)}</TableCell>
-                        <TableCell className="text-right font-mono">{formatBelop(andel)}</TableCell>
-                        <TableCell className="text-right font-mono">{formatBelop(mottatt)}</TableCell>
-                        <TableCell className={`text-right font-mono font-bold ${diff > 0 ? 'text-green-600' : diff < 0 ? 'text-red-600' : ''}`}>
-                          {diff !== 0 && (diff > 0 ? '+' : '')}{formatBelop(diff)}
-                          {diff < 0 && e.inntektsandel_prosent > 0 && <span className="text-xs ml-1">(lån)</span>}
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
+          <EiereLeieinntekter aktive={aktive} />
         </TabsContent>
 
         <TabsContent value="verdisimulator" className="space-y-6">
-          <Card>
-            <CardHeader><CardTitle>Boligens totalverdi</CardTitle></CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-center gap-3">
-                <Input type="number" value={totalVerdi} onChange={e => setTotalVerdi(Number(e.target.value))} className="w-[200px]" />
-                <span className="text-muted-foreground">kr</span>
-              </div>
-              <div className="flex gap-2 flex-wrap">
-                {[5000000, 7500000, 10000000, 12500000, 15000000, 20000000].map(v => (
-                  <Button key={v} variant={totalVerdi === v ? 'default' : 'outline'} size="sm" onClick={() => setTotalVerdi(v)}>
-                    {(v / 1000000).toFixed(v % 1000000 === 0 ? 0 : 1)} mill
-                  </Button>
-                ))}
-              </div>
-              <Slider value={[totalVerdi]} onValueChange={v => setTotalVerdi(v[0])} min={1000000} max={30000000} step={100000} />
-              <div className="text-sm text-muted-foreground">
-                Verdi: {formatBelop(totalVerdi)}
-              </div>
-            </CardContent>
-          </Card>
-
-          <div className="grid grid-cols-2 gap-4">
-            {aktive.map((e, i) => {
-              const verdi = Math.round(totalVerdi * e.eierandel_prosent / 100);
-              return (
-                <Card key={e.id}>
-                  <CardContent className="pt-4">
-                    <div className="flex items-center gap-2 mb-2">
-                      {e.type === 'aksjeselskap' ? <Building2 className="h-4 w-4" /> : <User className="h-4 w-4" />}
-                      <span className="font-medium">{e.navn}</span>
-                    </div>
-                    <div className="text-3xl font-bold" style={{ color: COLORS[i % COLORS.length] }}>{formatBelop(verdi)}</div>
-                    <div className="text-sm text-muted-foreground">{formatPct(e.eierandel_prosent)} av {formatBelop(totalVerdi)}</div>
-                  </CardContent>
-                </Card>
-              );
-            })}
-          </div>
-          <div className="text-center text-lg font-semibold">
-            Totalt: {formatPct(sumEierandel)} fordelt — {formatBelop(totalVerdi)}
-          </div>
+          <EiereVerdisimulator aktive={aktive} sumEierandel={sumEierandel} />
         </TabsContent>
 
         <TabsContent value="historikk" className="space-y-4">
-          {historikk.length === 0 && (
-            <div className="text-center text-muted-foreground py-8">Ingen eierskapsendringer registrert ennå.</div>
-          )}
-          {historikk.map(ev => {
-            const gains = ev.detaljer.filter(d => d.andel_etter > d.andel_for);
-            const losses = ev.detaljer.filter(d => d.andel_etter < d.andel_for);
-            const totalGain = gains.reduce((s, d) => s + (d.andel_etter - d.andel_for), 0);
-            return (
-              <Card key={ev.id}>
-                <CardContent className="pt-5 space-y-4">
-                  {/* Header */}
-                  <div className="flex items-center gap-3">
-                    <CalendarIcon className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-lg font-semibold">
-                      {format(new Date(ev.dato), 'd. MMMM yyyy', { locale: nb })}
-                    </span>
-                    <Badge variant="outline" className={cn("font-normal capitalize", ev.type === 'oppstart' && 'bg-green-100 text-green-800 border-green-200')}>
-                      {ev.type === 'oppstart' ? 'Opprinnelig' : ev.type === 'overføring' ? 'Overføring' : ev.type === 'justering' ? 'Justering' : ev.type}
-                    </Badge>
-                  </div>
-                  <p className="text-muted-foreground">{ev.beskrivelse}</p>
-
-                  {/* Visual summary */}
-                  {(gains.length > 0 || losses.length > 0) && (
-                    <div className="flex items-center gap-4 p-3 bg-muted/50 rounded-lg flex-wrap">
-                      <div className="flex flex-col gap-1">
-                        {losses.map(d => (
-                          <span key={d.eier_navn} className="flex items-center gap-1.5 text-sm font-medium text-red-600">
-                            <TrendingDown className="h-4 w-4" />
-                            {d.eier_navn} <span className="font-bold">-{formatPct(d.andel_for - d.andel_etter)}</span>
-                          </span>
-                        ))}
-                      </div>
-                      {losses.length > 0 && gains.length > 0 && (
-                        <ArrowRight className="h-5 w-5 text-muted-foreground" />
-                      )}
-                      <div className="flex flex-col gap-1">
-                        {gains.map(d => (
-                          <span key={d.eier_navn} className="flex items-center gap-1.5 text-sm font-medium text-green-600">
-                            <TrendingUp className="h-4 w-4" />
-                            {d.eier_navn} <span className="font-bold">+{formatPct(d.andel_etter - d.andel_for)}</span>
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Detail cards */}
-                  <div className="space-y-2">
-                    {ev.detaljer.map(d => {
-                      const endring = d.andel_etter - d.andel_for;
-                      return (
-                        <div key={d.id} className="flex items-center justify-between p-3 bg-muted/30 rounded-lg border">
-                          <div className="flex items-center gap-3">
-                            {endring < 0 && <TrendingDown className="h-4 w-4 text-red-500" />}
-                            {endring > 0 && <TrendingUp className="h-4 w-4 text-green-500" />}
-                            {endring === 0 && <div className="h-4 w-4" />}
-                            <div>
-                              <div className="font-medium">{d.eier_navn}</div>
-                              <div className="text-xs text-muted-foreground">{d.merknad || 'Uendret'}</div>
-                            </div>
-                          </div>
-                          <div className="flex items-center gap-2 text-sm font-mono">
-                            <span className="text-muted-foreground">{d.andel_for === 0 ? '-' : formatPct(d.andel_for)}</span>
-                            <ArrowRight className="h-3 w-3 text-muted-foreground" />
-                            <span className="font-bold">{formatPct(d.andel_etter)}</span>
-                            {endring !== 0 && (
-                              <span className={cn("font-bold ml-1", endring > 0 ? 'text-green-600' : 'text-red-600')}>
-                                ({endring > 0 ? '+' : ''}{formatPct(endring)})
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </CardContent>
-              </Card>
-            );
-          })}
+          <EiereHistorikk historikk={historikk} />
         </TabsContent>
 
         <TabsContent value="registrer" className="space-y-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-xl font-bold">Registrer eierskapsendring</h2>
-              <p className="text-sm text-muted-foreground">Fyll ut feltene under for å registrere en overføring av eierandeler</p>
-            </div>
-            <div className="flex items-center gap-2">
-              <Label className="text-sm">Avansert</Label>
-              <Switch checked={regMode === 'avansert'} onCheckedChange={v => { setRegMode(v ? 'avansert' : 'enkel'); if (v) { const m: Record<string, number> = {}; aktive.forEach(e => m[e.navn] = e.eierandel_prosent); setAdvAndeler(m); } }} />
-            </div>
-          </div>
-
-          <Card>
-            <CardContent className="pt-6 space-y-4">
-              <div className="grid grid-cols-3 gap-3">
-                <div className="space-y-1">
-                  <Label>Virkningsdato</Label>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button variant="outline" className={cn("w-full justify-start text-left font-normal", !regForm.dato && "text-muted-foreground")}>
-                        <CalendarIcon className="mr-2 h-4 w-4" />
-                        {regForm.dato ? format(new Date(regForm.dato), 'd. MMMM yyyy', { locale: nb }) : 'Velg dato'}
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="start">
-                      <Calendar
-                        mode="single"
-                        selected={regForm.dato ? new Date(regForm.dato) : undefined}
-                        onSelect={d => setRegForm(p => ({ ...p, dato: d ? format(d, 'yyyy-MM-dd') : '' }))}
-                        locale={nb}
-                        initialFocus
-                      />
-                    </PopoverContent>
-                  </Popover>
-                </div>
-                <div className="space-y-1">
-                  <Label>Type</Label>
-                  <Select value={regForm.type} onValueChange={v => setRegForm(p => ({ ...p, type: v }))}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="overføring">Overføring (kjøp/salg)</SelectItem>
-                      <SelectItem value="justering">Justering</SelectItem>
-                      <SelectItem value="annet">Annet</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-1"><Label>Beskrivelse</Label><Input value={regForm.beskrivelse} onChange={e => setRegForm(p => ({ ...p, beskrivelse: e.target.value }))} placeholder="F.eks. Sebastian selger til David" /></div>
-              </div>
-
-              {regMode === 'enkel' ? (
-                <div className="space-y-4">
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="space-y-1">
-                      <Label>Fra (selger)</Label>
-                      <Select value={regForm.fra} onValueChange={v => setRegForm(p => ({ ...p, fra: v }))}>
-                        <SelectTrigger><SelectValue placeholder="Velg eier" /></SelectTrigger>
-                        <SelectContent>{aktive.map(e => <SelectItem key={e.id} value={e.navn}>{e.navn} ({formatPct(e.eierandel_prosent)})</SelectItem>)}</SelectContent>
-                      </Select>
-                    </div>
-                    <div className="space-y-1">
-                      <Label>Til (kjøper)</Label>
-                      <Select value={regForm.til} onValueChange={v => setRegForm(p => ({ ...p, til: v }))}>
-                        <SelectTrigger><SelectValue placeholder="Velg eier" /></SelectTrigger>
-                        <SelectContent>{aktive.filter(e => e.navn !== regForm.fra).map(e => <SelectItem key={e.id} value={e.navn}>{e.navn} ({formatPct(e.eierandel_prosent)})</SelectItem>)}</SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    <div className="flex gap-4">
-                      <label className="flex items-center gap-2 cursor-pointer">
-                        <input type="radio" checked={regForm.beregnFraVerdi} onChange={() => setRegForm(p => ({ ...p, beregnFraVerdi: true }))} />
-                        <span className="text-sm">Beregn fra verdi</span>
-                      </label>
-                      <label className="flex items-center gap-2 cursor-pointer">
-                        <input type="radio" checked={!regForm.beregnFraVerdi} onChange={() => setRegForm(p => ({ ...p, beregnFraVerdi: false }))} />
-                        <span className="text-sm">Angi prosent direkte</span>
-                      </label>
-                    </div>
-                    {regForm.beregnFraVerdi ? (
-                      <div className="grid grid-cols-2 gap-3">
-                        <div className="space-y-1"><Label>Boligens verdi (kr)</Label><Input type="number" value={regForm.boligverdi} onChange={e => setRegForm(p => ({ ...p, boligverdi: Number(e.target.value) }))} /></div>
-                        <div className="space-y-1"><Label>Kjøpesum (kr)</Label><Input type="number" value={regForm.kjopesum} onChange={e => setRegForm(p => ({ ...p, kjopesum: Number(e.target.value) }))} /></div>
-                      </div>
-                    ) : (
-                      <div className="space-y-1 max-w-[200px]"><Label>Prosent som overføres</Label><Input type="number" step="0.0001" value={regForm.prosent} onChange={e => setRegForm(p => ({ ...p, prosent: Number(e.target.value) }))} /></div>
-                    )}
-                  </div>
-
-                  {regForm.fra && regForm.til && enkelPct > 0 && (
-                    <div className="p-4 bg-muted rounded-lg space-y-2">
-                      <div className="font-medium">Forhåndsvisning</div>
-                      {aktive.map(e => {
-                        const ny = e.navn === regForm.fra ? e.eierandel_prosent - enkelPct : e.navn === regForm.til ? e.eierandel_prosent + enkelPct : e.eierandel_prosent;
-                        const endring = ny - e.eierandel_prosent;
-                        return (
-                          <div key={e.id} className="flex justify-between text-sm">
-                            <span>{e.navn}</span>
-                            <span className="font-mono">
-                              {formatPct(e.eierandel_prosent)} → {formatPct(ny)}
-                              {endring !== 0 && <span className={endring > 0 ? 'text-green-600 ml-2' : 'text-red-600 ml-2'}>({endring > 0 ? '+' : ''}{formatPct(endring)})</span>}
-                            </span>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  )}
-
-                  <Button onClick={registerEnkel} disabled={!regForm.dato || !regForm.fra || !regForm.til || enkelPct <= 0}>Registrer overføring</Button>
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  <div className="space-y-3">
-                    {aktive.map(e => {
-                      const ny = advAndeler[e.navn] ?? e.eierandel_prosent;
-                      const endring = ny - e.eierandel_prosent;
-                      return (
-                        <div key={e.id} className="flex items-center gap-3">
-                          <span className="w-48 font-medium">{e.navn}</span>
-                          <span className="text-sm text-muted-foreground w-24">({formatPct(e.eierandel_prosent)})</span>
-                          <Input type="number" step="0.0001" value={ny} className="w-32"
-                            onChange={ev => setAdvAndeler(p => ({ ...p, [e.navn]: Number(ev.target.value) }))} />
-                          <span className="text-sm w-16">%</span>
-                          {endring !== 0 && <span className={`text-sm font-mono ${endring > 0 ? 'text-green-600' : 'text-red-600'}`}>{endring > 0 ? '+' : ''}{formatPct4(endring)}</span>}
-                        </div>
-                      );
-                    })}
-                  </div>
-                  <div className="flex gap-4 items-center">
-                    <span className={`font-mono ${advSumOk ? 'text-green-600' : 'text-red-600'}`}>
-                      Total: {formatPct4(advSum)} {advSumOk ? '✓' : '✗'}
-                    </span>
-                  </div>
-                  <Button onClick={registerAvansert} disabled={!advSumOk || !regForm.dato}>
-                    Registrer transaksjon ({aktive.filter(e => (advAndeler[e.navn] ?? e.eierandel_prosent) !== e.eierandel_prosent).length} parter)
-                  </Button>
-                </div>
-              )}
-            </CardContent>
-          </Card>
+          <EiereRegistrerEndring aktive={aktive} onChanged={handleChanged} />
         </TabsContent>
       </Tabs>
 
+      {/* Eier dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="max-w-lg">
           <DialogHeader><DialogTitle>{editId ? 'Rediger eier' : 'Ny eier'}</DialogTitle></DialogHeader>
