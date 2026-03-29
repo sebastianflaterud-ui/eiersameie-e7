@@ -108,9 +108,9 @@ export default function EiereTab() {
         <TabsList>
           <TabsTrigger value="oversikt" className="gap-1.5"><User className="h-4 w-4" />Oversikt</TabsTrigger>
           <TabsTrigger value="leieinntekter" className="gap-1.5">Leieinntekter</TabsTrigger>
-          <TabsTrigger value="verdisimulator" className="gap-1.5"><Building2 className="h-4 w-4" />Verdisimulator</TabsTrigger>
           <TabsTrigger value="historikk" className="gap-1.5"><CalendarIcon className="h-4 w-4" />Historikk</TabsTrigger>
           <TabsTrigger value="registrer" className="gap-1.5"><Plus className="h-4 w-4" />Registrer endring</TabsTrigger>
+          <TabsTrigger value="verdisimulator" className="gap-1.5"><Building2 className="h-4 w-4" />Verdisimulator</TabsTrigger>
         </TabsList>
 
         <TabsContent value="oversikt" className="space-y-6">
@@ -121,16 +121,16 @@ export default function EiereTab() {
           <EiereLeieinntekter aktive={aktive} />
         </TabsContent>
 
-        <TabsContent value="verdisimulator" className="space-y-6">
-          <EiereVerdisimulator aktive={aktive} sumEierandel={sumEierandel} />
-        </TabsContent>
-
         <TabsContent value="historikk" className="space-y-4">
-          <EiereHistorikk historikk={historikk} />
+          <EiereHistorikk historikk={historikk} onEdit={(ev) => { toast.info('Redigering av historikk er under utvikling'); }} />
         </TabsContent>
 
         <TabsContent value="registrer" className="space-y-6">
           <EiereRegistrerEndring aktive={aktive} onChanged={handleChanged} />
+        </TabsContent>
+
+        <TabsContent value="verdisimulator" className="space-y-6">
+          <EiereVerdisimulator aktive={aktive} sumEierandel={sumEierandel} />
         </TabsContent>
       </Tabs>
 
