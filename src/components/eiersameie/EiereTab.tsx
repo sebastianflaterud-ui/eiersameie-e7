@@ -650,8 +650,34 @@ export default function EiereTab() {
               <div className="space-y-1"><Label>Kostnadsandel %</Label><Input type="number" step="0.01" value={form.kostnadsandel_prosent} onChange={e => setForm(p => ({ ...p, kostnadsandel_prosent: Number(e.target.value) }))} /></div>
             </div>
             <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1"><Label>Gyldig fra</Label><Input type="date" value={form.gyldig_fra} onChange={e => setForm(p => ({ ...p, gyldig_fra: e.target.value }))} /></div>
-              <div className="space-y-1"><Label>Gyldig til</Label><Input type="date" value={form.gyldig_til} onChange={e => setForm(p => ({ ...p, gyldig_til: e.target.value }))} /></div>
+              <div className="space-y-1">
+                <Label>Gyldig fra</Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" className={cn("w-full justify-start text-left font-normal", !form.gyldig_fra && "text-muted-foreground")}>
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {form.gyldig_fra ? format(new Date(form.gyldig_fra), 'd. MMM yyyy', { locale: nb }) : 'Velg dato'}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar mode="single" selected={form.gyldig_fra ? new Date(form.gyldig_fra) : undefined} onSelect={d => setForm(p => ({ ...p, gyldig_fra: d ? format(d, 'yyyy-MM-dd') : '' }))} locale={nb} initialFocus />
+                  </PopoverContent>
+                </Popover>
+              </div>
+              <div className="space-y-1">
+                <Label>Gyldig til</Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" className={cn("w-full justify-start text-left font-normal", !form.gyldig_til && "text-muted-foreground")}>
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {form.gyldig_til ? format(new Date(form.gyldig_til), 'd. MMM yyyy', { locale: nb }) : 'Velg dato'}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar mode="single" selected={form.gyldig_til ? new Date(form.gyldig_til) : undefined} onSelect={d => setForm(p => ({ ...p, gyldig_til: d ? format(d, 'yyyy-MM-dd') : '' }))} locale={nb} initialFocus />
+                  </PopoverContent>
+                </Popover>
+              </div>
             </div>
             <div className="flex items-center gap-2"><Switch checked={form.aktiv} onCheckedChange={v => setForm(p => ({ ...p, aktiv: v }))} /><Label>Aktiv</Label></div>
             <div className="space-y-1"><Label>Notater</Label><Textarea value={form.notater} onChange={e => setForm(p => ({ ...p, notater: e.target.value }))} /></div>
