@@ -80,7 +80,7 @@ export default function EiereLeieinntekter({ aktive }: Props) {
             <TableHeader>
               <TableRow>
                 <TableHead>Eier</TableHead>
-                <TableHead className="text-right">Inntektsandel</TableHead>
+                <TableHead className="text-right">Andel</TableHead>
                 <TableHead className="text-right">Andel av inntekter</TableHead>
                 <TableHead className="text-right">Andel av kostnader</TableHead>
                 <TableHead className="text-right">Netto andel</TableHead>
