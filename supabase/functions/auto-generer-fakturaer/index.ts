@@ -3,10 +3,24 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
 const DAYS_BEFORE_FORFALL = 7;
+
+function log(level: string, msg: string, data?: Record<string, unknown>) {
+  const entry = { ts: new Date().toISOString(), fn: "auto-generer-fakturaer", level, msg, ...data };
+  if (level === "error") console.error(JSON.stringify(entry));
+  else console.log(JSON.stringify(entry));
+}
+
+function errorResponse(status: number, message: string, details?: string) {
+  log("error", message, { status, details });
+  return new Response(JSON.stringify({ error: message }), {
+    status,
+    headers: { ...corsHeaders, "Content-Type": "application/json" },
+  });
+}
 
 function daysInMonth(year: number, month: number): number {
   return new Date(year, month, 0).getDate();
@@ -35,9 +49,14 @@ function formaterMaanedKort(month: number, year: number): string {
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
+  const requestId = crypto.randomUUID().slice(0, 8);
+  log("info", "Fakturagenerering startet", { requestId });
+
   try {
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const supabaseUrl = Deno.env.get("SUPABASE_URL");
+    const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    if (!supabaseUrl || !serviceKey) return errorResponse(500, "Mangler miljøvariabler for database");
+
     const supabase = createClient(supabaseUrl, serviceKey);
 
     const today = new Date();
@@ -46,31 +65,54 @@ serve(async (req) => {
     const targetYear = targetDate.getFullYear();
     const targetMonth = targetDate.getMonth() + 1;
 
-    // Get all active leieforhold with leietaker info
-    const { data: allLf } = await supabase.from('leieforhold').select('*').eq('status', 'aktiv');
+    log("info", "Målperiode beregnet", { requestId, targetYear, targetMonth, today: today.toISOString().slice(0, 10) });
+
+    // Get all active leieforhold
+    const { data: allLf, error: lfError } = await supabase.from('leieforhold').select('*').eq('status', 'aktiv');
+    if (lfError) {
+      return errorResponse(500, "Kunne ikke hente leieforhold", lfError.message);
+    }
     if (!allLf || allLf.length === 0) {
+      log("info", "Ingen aktive leieforhold funnet", { requestId });
       return new Response(JSON.stringify({ message: "Ingen aktive leieforhold", created: 0 }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
+    log("info", "Aktive leieforhold funnet", { requestId, antall: allLf.length });
+
     // Group by user_id
     const userIds = [...new Set(allLf.map(lf => lf.user_id))];
     let totalCreated = 0;
+    let totalSkipped = 0;
+    const errors: string[] = [];
 
     for (const userId of userIds) {
       const userLfs = allLf.filter(lf => lf.user_id === userId);
 
       // Get leietakere for this user
-      const { data: leietakere } = await supabase.from('leietakere').select('*').eq('user_id', userId);
+      const { data: leietakere, error: ltError } = await supabase.from('leietakere').select('*').eq('user_id', userId);
+      if (ltError) {
+        log("warn", "Kunne ikke hente leietakere", { requestId, userId: userId.slice(0, 8), error: ltError.message });
+        errors.push(`leietakere for ${userId.slice(0, 8)}: ${ltError.message}`);
+        continue;
+      }
 
       // Get existing fakturaer for this month/year
       const maanedStr = formaterMaanedKort(targetMonth, targetYear);
-      const { data: existingFakturaer } = await supabase.from('fakturaer').select('leietaker_id, maaned').eq('user_id', userId).eq('aar', targetYear).eq('maaned', maanedStr);
+      const { data: existingFakturaer, error: efError } = await supabase
+        .from('fakturaer').select('leietaker_id, maaned')
+        .eq('user_id', userId).eq('aar', targetYear).eq('maaned', maanedStr);
+      if (efError) {
+        log("warn", "Kunne ikke hente eksisterende fakturaer", { requestId, error: efError.message });
+      }
       const existingSet = new Set((existingFakturaer || []).map(f => `${f.leietaker_id}_${f.maaned}`));
 
       // Get next fakturanr
-      const { data: lastFaktura } = await supabase.from('fakturaer').select('fakturanr').eq('user_id', userId).eq('aar', targetYear).order('fakturanr', { ascending: false }).limit(1);
+      const { data: lastFaktura } = await supabase
+        .from('fakturaer').select('fakturanr')
+        .eq('user_id', userId).eq('aar', targetYear)
+        .order('fakturanr', { ascending: false }).limit(1);
       let nextNr = 1;
       if (lastFaktura && lastFaktura.length > 0) {
         const match = lastFaktura[0].fakturanr.match(/(\d+)$/);
@@ -82,7 +124,11 @@ serve(async (req) => {
 
       for (const lf of userLfs) {
         const lt = (leietakere || []).find(l => l.id === lf.leietaker_id);
-        if (!lt) continue;
+        if (!lt) {
+          log("warn", "Leietaker ikke funnet for leieforhold", { requestId, leieforholdId: lf.id.slice(0, 8), leietakerId: lf.leietaker_id.slice(0, 8) });
+          totalSkipped++;
+          continue;
+        }
 
         const forfallDag = lf.forfall_dag || lt.forfall_dag || 1;
         const forfall = new Date(targetYear, targetMonth - 1, Math.min(forfallDag, daysInMonth(targetYear, targetMonth)));
@@ -90,39 +136,63 @@ serve(async (req) => {
         // Only generate if forfall is within DAYS_BEFORE_FORFALL days from now
         const diffMs = forfall.getTime() - today.getTime();
         const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
-        if (diffDays < 0 || diffDays > DAYS_BEFORE_FORFALL) continue;
+        if (diffDays < 0 || diffDays > DAYS_BEFORE_FORFALL) {
+          totalSkipped++;
+          continue;
+        }
 
         const expected = getExpectedForMonth(lf, targetYear, targetMonth);
-        if (expected <= 0) continue;
+        if (expected <= 0) {
+          totalSkipped++;
+          continue;
+        }
 
         const key = `${lt.id}_${maanedStr}`;
-        if (existingSet.has(key)) continue;
+        if (existingSet.has(key)) {
+          log("info", "Faktura finnes allerede, hopper over", { requestId, leietaker: lt.navn, maaned: maanedStr });
+          totalSkipped++;
+          continue;
+        }
 
         const fakturanr = `F${targetYear}-${String(nextNr).padStart(3, '0')}`;
 
-        const { data: inserted } = await supabase.from('fakturaer').insert({
+        const { data: inserted, error: insertError } = await supabase.from('fakturaer').insert({
           user_id: userId, fakturanr, leietaker_id: lt.id, leieforhold_id: lf.id,
           enhet_id: lf.enhet_id, maaned: maanedStr, aar: targetYear,
           belop: expected, forfall: forfall.toISOString().slice(0, 10),
           status: 'ikke_forfalt',
         }).select().single();
 
+        if (insertError) {
+          log("error", "Kunne ikke opprette faktura", { requestId, leietaker: lt.navn, error: insertError.message });
+          errors.push(`faktura for ${lt.navn}: ${insertError.message}`);
+          continue;
+        }
+
         if (inserted) {
+          log("info", "Faktura opprettet", { requestId, fakturanr, leietaker: lt.navn, belop: expected, maaned: maanedStr });
+
           const mottakere = (bm || []).filter(m => m.leieforhold_id === lf.id);
           if (mottakere.length > 0) {
             for (const m of mottakere) {
-              await supabase.from('faktura_mottakere').insert({
+              const { error: mottakerError } = await supabase.from('faktura_mottakere').insert({
                 user_id: userId, faktura_id: inserted.id,
                 mottaker_navn: m.mottaker_navn, kontonummer: m.kontonummer || '',
                 belop: m.belop, betalingsreferanse: maanedStr,
               });
+              if (mottakerError) {
+                log("warn", "Kunne ikke opprette fakturamottaker", { requestId, fakturanr, error: mottakerError.message });
+              }
             }
           } else {
-            await supabase.from('faktura_mottakere').insert({
+            const { error: defaultMottakerError } = await supabase.from('faktura_mottakere').insert({
               user_id: userId, faktura_id: inserted.id,
               mottaker_navn: 'Sebastian Flåterud', kontonummer: '12241835675',
               belop: expected, betalingsreferanse: maanedStr,
             });
+            if (defaultMottakerError) {
+              log("warn", "Kunne ikke opprette standard fakturamottaker", { requestId, fakturanr, error: defaultMottakerError.message });
+            }
           }
           nextNr++;
           totalCreated++;
@@ -131,12 +201,19 @@ serve(async (req) => {
       }
     }
 
-    return new Response(JSON.stringify({ message: `${totalCreated} faktura(er) generert`, created: totalCreated }), {
+    const summary = {
+      message: `${totalCreated} faktura(er) generert`,
+      created: totalCreated,
+      skipped: totalSkipped,
+      errors: errors.length > 0 ? errors : undefined,
+    };
+
+    log("info", "Fakturagenerering fullført", { requestId, ...summary });
+
+    return new Response(JSON.stringify(summary), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (err) {
-    return new Response(JSON.stringify({ error: err.message }), {
-      status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return errorResponse(500, err.message || "Ukjent feil", err.stack?.slice(0, 300));
   }
 });
