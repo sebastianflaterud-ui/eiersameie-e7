@@ -1,51 +1,63 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { formatBelop } from '@/lib/format';
 import { Eier, formatPct } from './types';
 
+const MAANEDER = ['Jan', 'Feb', 'Mar', 'Apr', 'Mai', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Des'];
+
 interface Props {
   aktive: Eier[];
 }
 
+interface TxData {
+  dato: string;
+  belop: number;
+  retning: string;
+  er_oppgjor: boolean | null;
+  oppgjor_til: string | null;
+}
+
 export default function EiereLeieinntekter({ aktive }: Props) {
   const [liYear, setLiYear] = useState(new Date().getFullYear());
-  const [brutto, setBrutto] = useState(0);
-  const [totalKostnader, setTotalKostnader] = useState(0);
-  const [oppgjor, setOppgjor] = useState<Record<string, number>>({});
+  const [txs, setTxs] = useState<TxData[]>([]);
 
   useEffect(() => {
     async function fetchData() {
-      // Hent alle E7-transaksjoner for året
-      const { data } = await supabase.from('transaksjoner').select('*')
+      const { data } = await supabase.from('transaksjoner').select('dato, belop, retning, er_oppgjor, oppgjor_til')
         .eq('kategori', 'Eiersameie E7')
         .gte('dato', `${liYear}-01-01`).lte('dato', `${liYear}-12-31`);
-
-      const txs = data || [];
-      const realTxs = txs.filter(t => !t.er_oppgjor);
-
-      // Brutto leieinntekter (inn, ikke oppgjør)
-      const bruttoSum = realTxs.filter(t => t.retning === 'inn').reduce((s, t) => s + Number(t.belop), 0);
-      setBrutto(bruttoSum);
-
-      // Totale kostnader (ut, ikke oppgjør)
-      const kostnaderSum = realTxs.filter(t => t.retning === 'ut').reduce((s, t) => s + Number(t.belop), 0);
-      setTotalKostnader(kostnaderSum);
-
-      // Oppgjør per eier (faktisk utbetalt)
-      const oppgjorMap: Record<string, number> = {};
-      for (const t of txs.filter(t => t.er_oppgjor)) {
-        const til = (t as any).oppgjor_til || 'Ukjent';
-        oppgjorMap[til] = (oppgjorMap[til] || 0) + Number(t.belop);
-      }
-      setOppgjor(oppgjorMap);
+      setTxs((data || []) as TxData[]);
     }
     fetchData();
   }, [liYear]);
 
+  const realTxs = useMemo(() => txs.filter(t => !t.er_oppgjor), [txs]);
+  const brutto = useMemo(() => realTxs.filter(t => t.retning === 'inn').reduce((s, t) => s + Number(t.belop), 0), [realTxs]);
+  const totalKostnader = useMemo(() => realTxs.filter(t => t.retning === 'ut').reduce((s, t) => s + Number(t.belop), 0), [realTxs]);
   const netto = brutto - totalKostnader;
+
+  const oppgjor = useMemo(() => {
+    const map: Record<string, number> = {};
+    for (const t of txs.filter(t => t.er_oppgjor)) {
+      const til = t.oppgjor_til || 'Ukjent';
+      map[til] = (map[til] || 0) + Number(t.belop);
+    }
+    return map;
+  }, [txs]);
+
+  // Månedsdata: { [måned 0-11]: { inntekter, kostnader } }
+  const maanedsData = useMemo(() => {
+    const data: { inntekter: number; kostnader: number }[] = Array.from({ length: 12 }, () => ({ inntekter: 0, kostnader: 0 }));
+    for (const t of realTxs) {
+      const mnd = new Date(t.dato).getMonth();
+      if (t.retning === 'inn') data[mnd].inntekter += Number(t.belop);
+      else data[mnd].kostnader += Number(t.belop);
+    }
+    return data;
+  }, [realTxs]);
 
   return (
     <div className="space-y-6">
@@ -74,6 +86,7 @@ export default function EiereLeieinntekter({ aktive }: Props) {
         </CardContent></Card>
       </div>
 
+      {/* Årsoversikt per eier */}
       <Card>
         <CardContent className="pt-6">
           <Table>
@@ -81,10 +94,10 @@ export default function EiereLeieinntekter({ aktive }: Props) {
               <TableRow>
                 <TableHead>Eier</TableHead>
                 <TableHead className="text-right">Andel</TableHead>
-                <TableHead className="text-right">Andel av inntekter</TableHead>
-                <TableHead className="text-right">Andel av kostnader</TableHead>
+                <TableHead className="text-right">Inntekter</TableHead>
+                <TableHead className="text-right">Kostnader</TableHead>
                 <TableHead className="text-right">Resultat</TableHead>
-                <TableHead className="text-right">Faktisk mottatt</TableHead>
+                <TableHead className="text-right">Mottatt</TableHead>
                 <TableHead className="text-right">Differanse</TableHead>
               </TableRow>
             </TableHeader>
@@ -125,8 +138,75 @@ export default function EiereLeieinntekter({ aktive }: Props) {
             </TableFooter>
           </Table>
           <p className="text-xs text-muted-foreground mt-3">
-            «Faktisk mottatt» hentes fra oppgjørstransaksjoner (transaksjoner merket som oppgjør med mottaker-eier).
-            Differanse viser avvik mellom netto andel og faktisk utbetalt.
+            «Mottatt» hentes fra oppgjørstransaksjoner. Differanse viser avvik mellom resultat og faktisk utbetalt.
+          </p>
+        </CardContent>
+      </Card>
+
+      {/* Måned for måned */}
+      <Card>
+        <CardHeader><CardTitle>Måned for måned</CardTitle></CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Måned</TableHead>
+                <TableHead className="text-right">Inntekter</TableHead>
+                <TableHead className="text-right">Kostnader</TableHead>
+                {aktive.map(e => (
+                  <TableHead key={e.id} className="text-right text-xs">{e.navn.split(' ')[0]}</TableHead>
+                ))}
+                <TableHead className="text-right">Totalt</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {MAANEDER.map((mnd, i) => {
+                const d = maanedsData[i];
+                const resultat = d.inntekter - d.kostnader;
+                const harData = d.inntekter > 0 || d.kostnader > 0;
+                return (
+                  <TableRow key={i} className={!harData ? 'opacity-40' : ''}>
+                    <TableCell className="font-medium">{mnd}</TableCell>
+                    <TableCell className="text-right font-mono text-sm text-green-600">
+                      {d.inntekter > 0 ? formatBelop(d.inntekter) : '–'}
+                    </TableCell>
+                    <TableCell className="text-right font-mono text-sm text-red-600">
+                      {d.kostnader > 0 ? formatBelop(d.kostnader) : '–'}
+                    </TableCell>
+                    {aktive.map(e => {
+                      const eierResultat = Math.round(d.inntekter * e.inntektsandel_prosent / 100) - Math.round(d.kostnader * e.kostnadsandel_prosent / 100);
+                      return (
+                        <TableCell key={e.id} className={`text-right font-mono text-sm ${!harData ? '' : eierResultat >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                          {harData ? formatBelop(eierResultat) : '–'}
+                        </TableCell>
+                      );
+                    })}
+                    <TableCell className={`text-right font-mono text-sm font-semibold ${!harData ? '' : resultat >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                      {harData ? formatBelop(resultat) : '–'}
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+            <TableFooter>
+              <TableRow>
+                <TableCell className="font-bold">Sum</TableCell>
+                <TableCell className="text-right font-mono font-bold text-green-600">{formatBelop(brutto)}</TableCell>
+                <TableCell className="text-right font-mono font-bold text-red-600">{formatBelop(totalKostnader)}</TableCell>
+                {aktive.map(e => {
+                  const eierResultat = Math.round(brutto * e.inntektsandel_prosent / 100) - Math.round(totalKostnader * e.kostnadsandel_prosent / 100);
+                  return (
+                    <TableCell key={e.id} className={`text-right font-mono font-bold text-sm ${eierResultat >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                      {formatBelop(eierResultat)}
+                    </TableCell>
+                  );
+                })}
+                <TableCell className={`text-right font-mono font-bold ${netto >= 0 ? 'text-green-600' : 'text-red-600'}`}>{formatBelop(netto)}</TableCell>
+              </TableRow>
+            </TableFooter>
+          </Table>
+          <p className="text-xs text-muted-foreground mt-3">
+            Viser hver eiers resultat (inntekter − kostnader) per måned basert på deres andel.
           </p>
         </CardContent>
       </Card>
