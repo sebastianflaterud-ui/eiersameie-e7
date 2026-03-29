@@ -6,39 +6,79 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+function log(level: string, msg: string, data?: Record<string, unknown>) {
+  const entry = { ts: new Date().toISOString(), fn: "ai-klassifiser", level, msg, ...data };
+  if (level === "error") console.error(JSON.stringify(entry));
+  else console.log(JSON.stringify(entry));
+}
+
+function errorResponse(status: number, message: string, details?: string) {
+  log("error", message, { status, details });
+  return new Response(JSON.stringify({ error: message }), {
+    status,
+    headers: { ...corsHeaders, "Content-Type": "application/json" },
+  });
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
+  const requestId = crypto.randomUUID().slice(0, 8);
+  log("info", "Forespørsel mottatt", { requestId });
+
   try {
+    // Auth
     const authHeader = req.headers.get("Authorization");
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const supabaseKey = Deno.env.get("SUPABASE_PUBLISHABLE_KEY")!;
+    if (!authHeader) return errorResponse(401, "Mangler autorisasjonsheader");
+
+    const supabaseUrl = Deno.env.get("SUPABASE_URL");
+    const supabaseKey = Deno.env.get("SUPABASE_PUBLISHABLE_KEY");
+    if (!supabaseUrl || !supabaseKey) return errorResponse(500, "Mangler miljøvariabler for database");
+
     const supabase = createClient(supabaseUrl, supabaseKey, {
-      global: { headers: { Authorization: authHeader || "" } },
+      global: { headers: { Authorization: authHeader } },
     });
 
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {
-      return new Response(JSON.stringify({ error: "Ikke autentisert" }), {
-        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return errorResponse(401, "Ikke autentisert", authError?.message);
+    }
+    log("info", "Bruker autentisert", { requestId, userId: user.id.slice(0, 8) });
+
+    // Input validation
+    let body: unknown;
+    try {
+      body = await req.json();
+    } catch {
+      return errorResponse(400, "Ugyldig JSON i forespørsel");
     }
 
-    const { transaksjoner } = await req.json();
+    const { transaksjoner } = body as { transaksjoner?: unknown };
     if (!transaksjoner || !Array.isArray(transaksjoner) || transaksjoner.length === 0) {
-      return new Response(JSON.stringify({ error: "Ingen transaksjoner å klassifisere" }), {
-        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return errorResponse(400, "Ingen transaksjoner å klassifisere");
+    }
+    if (transaksjoner.length > 100) {
+      return errorResponse(400, "Maks 100 transaksjoner per forespørsel", `Mottok ${transaksjoner.length}`);
     }
 
-    // Fetch existing rules and leietakere for context
-    const [{ data: regler }, { data: leietakere }, { data: enheter }] = await Promise.all([
+    log("info", "Klassifiserer transaksjoner", { requestId, antall: transaksjoner.length });
+
+    // Fetch context data
+    const [reglerRes, leietakereRes, enheterRes] = await Promise.all([
       supabase.from("klassifiseringsregler").select("monster, motpart, kategori, underkategori, inntektstype, utgiftstype").eq("user_id", user.id).eq("aktiv", true),
       supabase.from("leietakere").select("navn, naavaerende, forfall_dag").eq("user_id", user.id),
       supabase.from("enheter").select("navn, type, boenhet, status").eq("user_id", user.id),
     ]);
 
-    const txList = transaksjoner.map((t: any, i: number) => 
+    if (reglerRes.error) log("warn", "Kunne ikke hente regler", { error: reglerRes.error.message });
+    if (leietakereRes.error) log("warn", "Kunne ikke hente leietakere", { error: leietakereRes.error.message });
+    if (enheterRes.error) log("warn", "Kunne ikke hente enheter", { error: enheterRes.error.message });
+
+    const regler = reglerRes.data || [];
+    const leietakere = leietakereRes.data || [];
+    const enheter = enheterRes.data || [];
+
+    const txList = transaksjoner.map((t: any, i: number) =>
       `${i + 1}. [${t.retning}] ${t.dato} | ${t.belop} kr | "${t.beskrivelse_bank}" | motpart_bank: "${t.motpart_bank || ''}" | konto: "${t.konto || ''}"`
     ).join("\n");
 
@@ -59,13 +99,13 @@ UNDERKATEGORIER for Privat:
 - "Mat", "Transport", "Abonnement", "Forsikring", "Trygd/Pensjon", "Overføring", "Inkasso", "Lønn", etc.
 
 KJENTE LEIETAKERE:
-${(leietakere || []).map(l => `- ${l.navn} (${l.naavaerende ? 'nåværende' : 'tidligere'}, forfall dag ${l.forfall_dag})`).join("\n")}
+${leietakere.map(l => `- ${l.navn} (${l.naavaerende ? 'nåværende' : 'tidligere'}, forfall dag ${l.forfall_dag})`).join("\n")}
 
 ENHETER:
-${(enheter || []).map(e => `- ${e.navn} (${e.type}, ${e.boenhet}, ${e.status})`).join("\n")}
+${enheter.map(e => `- ${e.navn} (${e.type}, ${e.boenhet}, ${e.status})`).join("\n")}
 
 EKSISTERENDE REGLER (for å forstå mønstre):
-${(regler || []).slice(0, 30).map(r => `"${r.monster}" → ${r.kategori}/${r.underkategori || ''} motpart: ${r.motpart || ''}`).join("\n")}
+${regler.slice(0, 30).map(r => `"${r.monster}" → ${r.kategori}/${r.underkategori || ''} motpart: ${r.motpart || ''}`).join("\n")}
 
 VIKTIG:
 - Innbetalinger som matcher leietakernavn = "Eiersameie E7" + underkategori "Leieinntekt" + sett leie_for til leietakernavn
@@ -112,8 +152,9 @@ Svar med JSON-array. Hvert element:
 }`;
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
+    if (!LOVABLE_API_KEY) return errorResponse(500, "LOVABLE_API_KEY ikke konfigurert");
 
+    const aiStartTime = Date.now();
     const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
@@ -163,30 +204,46 @@ Svar med JSON-array. Hvert element:
       }),
     });
 
+    const aiDurationMs = Date.now() - aiStartTime;
+    log("info", "AI-respons mottatt", { requestId, status: aiResponse.status, durationMs: aiDurationMs });
+
     if (!aiResponse.ok) {
       const errText = await aiResponse.text();
-      console.error("AI gateway error:", aiResponse.status, errText);
-      if (aiResponse.status === 429) return new Response(JSON.stringify({ error: "For mange forespørsler. Prøv igjen om litt." }), { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } });
-      if (aiResponse.status === 402) return new Response(JSON.stringify({ error: "AI-kreditter brukt opp." }), { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } });
-      return new Response(JSON.stringify({ error: "AI-feil" }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      if (aiResponse.status === 429) return errorResponse(429, "For mange forespørsler. Prøv igjen om litt.");
+      if (aiResponse.status === 402) return errorResponse(402, "AI-kreditter brukt opp.");
+      return errorResponse(500, "AI-gateway feil", `Status ${aiResponse.status}: ${errText.slice(0, 200)}`);
     }
 
     const result = await aiResponse.json();
     const toolCall = result.choices?.[0]?.message?.tool_calls?.[0];
     if (!toolCall) {
-      return new Response(JSON.stringify({ error: "Ingen klassifisering returnert" }), {
-        status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      log("error", "AI returnerte ingen tool_call", { requestId, choices: JSON.stringify(result.choices).slice(0, 200) });
+      return errorResponse(500, "Ingen klassifisering returnert fra AI");
     }
 
-    const parsed = JSON.parse(toolCall.function.arguments);
+    let parsed: { results: unknown[] };
+    try {
+      parsed = JSON.parse(toolCall.function.arguments);
+    } catch (parseErr) {
+      log("error", "Kunne ikke parse AI-respons", { requestId, raw: toolCall.function.arguments.slice(0, 200) });
+      return errorResponse(500, "Ugyldig respons fra AI");
+    }
+
+    if (!parsed.results || !Array.isArray(parsed.results)) {
+      return errorResponse(500, "AI returnerte ugyldig format");
+    }
+
+    log("info", "Klassifisering fullført", {
+      requestId,
+      antallInput: transaksjoner.length,
+      antallOutput: parsed.results.length,
+      durationMs: aiDurationMs,
+    });
+
     return new Response(JSON.stringify({ results: parsed.results }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {
-    console.error("Error:", e);
-    return new Response(JSON.stringify({ error: e.message || "Ukjent feil" }), {
-      status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return errorResponse(500, e.message || "Ukjent feil", e.stack?.slice(0, 300));
   }
 });

@@ -6,51 +6,126 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+function log(level: string, msg: string, data?: Record<string, unknown>) {
+  const entry = { ts: new Date().toISOString(), fn: "analyse-chat", level, msg, ...data };
+  if (level === "error") console.error(JSON.stringify(entry));
+  else console.log(JSON.stringify(entry));
+}
+
+function errorResponse(status: number, message: string, details?: string) {
+  log("error", message, { status, details });
+  return new Response(JSON.stringify({ error: message }), {
+    status,
+    headers: { ...corsHeaders, "Content-Type": "application/json" },
+  });
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
-  try {
-    const { messages } = await req.json();
-    const authHeader = req.headers.get("Authorization");
+  const requestId = crypto.randomUUID().slice(0, 8);
+  log("info", "Chat-forespørsel mottatt", { requestId });
 
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const supabaseKey = Deno.env.get("SUPABASE_PUBLISHABLE_KEY")!;
+  try {
+    // Auth
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader) return errorResponse(401, "Mangler autorisasjonsheader");
+
+    const supabaseUrl = Deno.env.get("SUPABASE_URL");
+    const supabaseKey = Deno.env.get("SUPABASE_PUBLISHABLE_KEY");
+    if (!supabaseUrl || !supabaseKey) return errorResponse(500, "Mangler miljøvariabler for database");
+
     const supabase = createClient(supabaseUrl, supabaseKey, {
-      global: { headers: { Authorization: authHeader || "" } },
+      global: { headers: { Authorization: authHeader } },
     });
 
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {
-      return new Response(JSON.stringify({ error: "Ikke autentisert" }), {
-        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return errorResponse(401, "Ikke autentisert", authError?.message);
+    }
+    log("info", "Bruker autentisert", { requestId, userId: user.id.slice(0, 8) });
+
+    // Input validation
+    let body: unknown;
+    try {
+      body = await req.json();
+    } catch {
+      return errorResponse(400, "Ugyldig JSON i forespørsel");
     }
 
-    const lastMsg = messages[messages.length - 1]?.content || "";
-    
+    const { messages } = body as { messages?: unknown[] };
+    if (!messages || !Array.isArray(messages) || messages.length === 0) {
+      return errorResponse(400, "Meldinger mangler eller er tomme");
+    }
+    if (messages.length > 50) {
+      return errorResponse(400, "For mange meldinger i samtalen", `Mottok ${messages.length}`);
+    }
+
+    const lastMsg = (messages[messages.length - 1] as any)?.content || "";
+    log("info", "Henter kontekstdata", { requestId, meldinger: messages.length, siste: lastMsg.slice(0, 60) });
+
+    // Fetch context data with error handling per query
     let txQuery = supabase.from("transaksjoner").select("*").eq("user_id", user.id).order("dato", { ascending: false }).limit(500);
     const yearMatch = lastMsg.match(/20\d{2}/);
     if (yearMatch) txQuery = txQuery.eq("skatteaar", parseInt(yearMatch[0]));
 
-    const { data: txData } = await txQuery;
-    const { data: abData } = await supabase.from("abonnementer").select("*").eq("user_id", user.id);
-    const { data: eiereData } = await supabase.from("eiere").select("*").eq("user_id", user.id);
-    const { data: mvDataRows } = await supabase.from("mellomvaerende").select("*").eq("user_id", user.id);
-    const { data: mvBevData } = await supabase.from("mellomvaerende_bevegelser").select("*").eq("user_id", user.id).order("dato", { ascending: false }).limit(100);
-    const { data: enheterData } = await supabase.from("enheter").select("*").eq("user_id", user.id);
-    const { data: leietakereData } = await supabase.from("leietakere").select("*").eq("user_id", user.id);
-    const { data: leieforholdData } = await supabase.from("leieforhold").select("*").eq("user_id", user.id);
+    const startTime = Date.now();
+    const [txRes, abRes, eiereRes, mvRes, mvBevRes, enheterRes, leietakereRes, leieforholdRes, fakturaRes] = await Promise.all([
+      txQuery,
+      supabase.from("abonnementer").select("*").eq("user_id", user.id),
+      supabase.from("eiere").select("*").eq("user_id", user.id),
+      supabase.from("mellomvaerende").select("*").eq("user_id", user.id),
+      supabase.from("mellomvaerende_bevegelser").select("*").eq("user_id", user.id).order("dato", { ascending: false }).limit(100),
+      supabase.from("enheter").select("*").eq("user_id", user.id),
+      supabase.from("leietakere").select("*").eq("user_id", user.id),
+      supabase.from("leieforhold").select("*").eq("user_id", user.id),
+      supabase.from("fakturaer").select("*").eq("user_id", user.id).order("forfall", { ascending: false }).limit(100),
+    ]);
+    const dbDurationMs = Date.now() - startTime;
 
-    const txSummary = txData && txData.length > 0
+    // Log any query errors but continue with available data
+    const queryErrors: string[] = [];
+    if (txRes.error) queryErrors.push(`transaksjoner: ${txRes.error.message}`);
+    if (abRes.error) queryErrors.push(`abonnementer: ${abRes.error.message}`);
+    if (eiereRes.error) queryErrors.push(`eiere: ${eiereRes.error.message}`);
+    if (mvRes.error) queryErrors.push(`mellomvaerende: ${mvRes.error.message}`);
+    if (mvBevRes.error) queryErrors.push(`mellomvaerende_bevegelser: ${mvBevRes.error.message}`);
+    if (enheterRes.error) queryErrors.push(`enheter: ${enheterRes.error.message}`);
+    if (leietakereRes.error) queryErrors.push(`leietakere: ${leietakereRes.error.message}`);
+    if (leieforholdRes.error) queryErrors.push(`leieforhold: ${leieforholdRes.error.message}`);
+    if (fakturaRes.error) queryErrors.push(`fakturaer: ${fakturaRes.error.message}`);
+
+    if (queryErrors.length > 0) log("warn", "Noen spørringer feilet", { requestId, errors: queryErrors });
+
+    log("info", "Kontekstdata hentet", {
+      requestId,
+      dbDurationMs,
+      transaksjoner: txRes.data?.length || 0,
+      leietakere: leietakereRes.data?.length || 0,
+      fakturaer: fakturaRes.data?.length || 0,
+    });
+
+    const txData = txRes.data || [];
+    const abData = abRes.data || [];
+    const eiereData = eiereRes.data || [];
+    const mvDataRows = mvRes.data || [];
+    const mvBevData = mvBevRes.data || [];
+    const enheterData = enheterRes.data || [];
+    const leietakereData = leietakereRes.data || [];
+    const leieforholdData = leieforholdRes.data || [];
+    const fakturaData = fakturaRes.data || [];
+
+    const txSummary = txData.length > 0
       ? `Transaksjonsdata (${txData.length} rader):\n${JSON.stringify(txData.slice(0, 200), null, 0)}`
       : "Ingen transaksjoner funnet.";
-    const abSummary = abData && abData.length > 0 ? `\n\nAbonnementer (${abData.length}):\n${JSON.stringify(abData, null, 0)}` : "";
-    const eiereSummary = eiereData && eiereData.length > 0 ? `\n\nEiere:\n${JSON.stringify(eiereData, null, 0)}` : "";
-    const mvSummary = mvDataRows && mvDataRows.length > 0 ? `\n\nMellomværende:\n${JSON.stringify(mvDataRows, null, 0)}` : "";
-    const mvBevSummary = mvBevData && mvBevData.length > 0 ? `\n\nMellomværende bevegelser (siste 100):\n${JSON.stringify(mvBevData, null, 0)}` : "";
-    const enheterSummary = enheterData && enheterData.length > 0 ? `\n\nEnheter:\n${JSON.stringify(enheterData, null, 0)}` : "";
-    const leietakereSummary = leietakereData && leietakereData.length > 0 ? `\n\nLeietakere:\n${JSON.stringify(leietakereData, null, 0)}` : "";
-    const leieforholdSummary = leieforholdData && leieforholdData.length > 0 ? `\n\nLeieforhold:\n${JSON.stringify(leieforholdData, null, 0)}` : "";
+    const abSummary = abData.length > 0 ? `\n\nAbonnementer (${abData.length}):\n${JSON.stringify(abData, null, 0)}` : "";
+    const eiereSummary = eiereData.length > 0 ? `\n\nEiere:\n${JSON.stringify(eiereData, null, 0)}` : "";
+    const mvSummary = mvDataRows.length > 0 ? `\n\nMellomværende:\n${JSON.stringify(mvDataRows, null, 0)}` : "";
+    const mvBevSummary = mvBevData.length > 0 ? `\n\nMellomværende bevegelser (siste 100):\n${JSON.stringify(mvBevData, null, 0)}` : "";
+    const enheterSummary = enheterData.length > 0 ? `\n\nEnheter:\n${JSON.stringify(enheterData, null, 0)}` : "";
+    const leietakereSummary = leietakereData.length > 0 ? `\n\nLeietakere:\n${JSON.stringify(leietakereData, null, 0)}` : "";
+    const leieforholdSummary = leieforholdData.length > 0 ? `\n\nLeieforhold:\n${JSON.stringify(leieforholdData, null, 0)}` : "";
+    const fakturaSummary = fakturaData.length > 0 ? `\n\nFakturaer (${fakturaData.length}):\n${JSON.stringify(fakturaData, null, 0)}` : "";
 
     const systemPrompt = `Du er en finansanalytiker som hjelper en norsk utleier med å analysere transaksjonsdata.
 Svar alltid på norsk. Bruk norsk tallformat (38.265,00 kr). Datoformat DD.MM.YY.
@@ -126,40 +201,47 @@ Fakturering og betalingsoppfølging:
 - Data finnes i fakturaer, faktura_betalinger, faktura_mottakere og faktura_justeringer tabellene.
 - Typiske spørsmål: "Hvem har ikke betalt for mars?", "Vis alle forfalte fakturaer", "Generer faktura for april", "Hva er utestående totalt?", "Vis betalingshistorikk for Camilla"
 
-${txSummary}${abSummary}${eiereSummary}${mvSummary}${mvBevSummary}${enheterSummary}${leietakereSummary}${leieforholdSummary}`;
-
-    // Also fetch faktura data for chat
-    const { data: fakturaData } = await supabase.from('fakturaer').select('*').eq('user_id', user.id).order('forfall', { ascending: false }).limit(100);
-    const fakturaSummary = fakturaData && fakturaData.length > 0 ? `\n\nFakturaer (${fakturaData.length}):\n${JSON.stringify(fakturaData, null, 0)}` : "";
-
-    const fullSystemPrompt = systemPrompt + fakturaSummary;
+${txSummary}${abSummary}${eiereSummary}${mvSummary}${mvBevSummary}${enheterSummary}${leietakereSummary}${leieforholdSummary}${fakturaSummary}`;
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
+    if (!LOVABLE_API_KEY) return errorResponse(500, "LOVABLE_API_KEY ikke konfigurert");
 
+    const aiStartTime = Date.now();
     const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
       body: JSON.stringify({
         model: "google/gemini-3-flash-preview",
-        messages: [{ role: "system", content: fullSystemPrompt }, ...messages],
+        messages: [{ role: "system", content: systemPrompt }, ...messages],
         max_tokens: 4096,
       }),
     });
 
+    const aiDurationMs = Date.now() - aiStartTime;
+    log("info", "AI-respons mottatt", { requestId, status: aiResponse.status, durationMs: aiDurationMs });
+
     if (!aiResponse.ok) {
       const errText = await aiResponse.text();
-      console.error("AI gateway error:", aiResponse.status, errText);
-      if (aiResponse.status === 429) return new Response(JSON.stringify({ error: "For mange forespørsler." }), { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } });
-      if (aiResponse.status === 402) return new Response(JSON.stringify({ error: "Kreditter brukt opp." }), { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } });
-      return new Response(JSON.stringify({ error: "AI-feil: " + errText }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      if (aiResponse.status === 429) return errorResponse(429, "For mange forespørsler.");
+      if (aiResponse.status === 402) return errorResponse(402, "Kreditter brukt opp.");
+      return errorResponse(500, "AI-gateway feil", `Status ${aiResponse.status}: ${errText.slice(0, 200)}`);
     }
 
     const result = await aiResponse.json();
-    const content = result.choices?.[0]?.message?.content || "Ingen respons.";
-    return new Response(JSON.stringify({ content }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    const content = result.choices?.[0]?.message?.content;
+    if (!content) {
+      log("warn", "Tom AI-respons", { requestId, choices: JSON.stringify(result.choices).slice(0, 200) });
+      return new Response(JSON.stringify({ content: "Beklager, fikk ingen respons fra AI. Prøv igjen." }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    log("info", "Chat fullført", { requestId, responsLengde: content.length, totalMs: Date.now() - startTime });
+
+    return new Response(JSON.stringify({ content }), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
   } catch (e) {
-    console.error("Error:", e);
-    return new Response(JSON.stringify({ error: e.message || "Ukjent feil" }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    return errorResponse(500, e.message || "Ukjent feil", e.stack?.slice(0, 300));
   }
 });
