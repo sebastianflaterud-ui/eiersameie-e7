@@ -104,10 +104,6 @@ export default function EiereTab() {
 
   return (
     <div className="space-y-6 mt-4">
-      <div>
-        <h2 className="text-2xl font-bold">Eiere</h2>
-        <p className="text-muted-foreground">Administrer eiere og eierandeler i sameiet</p>
-      </div>
       <Tabs value={tab} onValueChange={setTab}>
         <TabsList>
           <TabsTrigger value="oversikt" className="gap-1.5"><User className="h-4 w-4" />Oversikt</TabsTrigger>
