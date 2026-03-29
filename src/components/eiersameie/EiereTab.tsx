@@ -476,7 +476,26 @@ export default function EiereTab() {
           <Card>
             <CardContent className="pt-6 space-y-4">
               <div className="grid grid-cols-3 gap-3">
-                <div className="space-y-1"><Label>Virkningsdato</Label><Input type="date" value={regForm.dato} onChange={e => setRegForm(p => ({ ...p, dato: e.target.value }))} /></div>
+                <div className="space-y-1">
+                  <Label>Virkningsdato</Label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button variant="outline" className={cn("w-full justify-start text-left font-normal", !regForm.dato && "text-muted-foreground")}>
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {regForm.dato ? format(new Date(regForm.dato), 'd. MMMM yyyy', { locale: nb }) : 'Velg dato'}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={regForm.dato ? new Date(regForm.dato) : undefined}
+                        onSelect={d => setRegForm(p => ({ ...p, dato: d ? format(d, 'yyyy-MM-dd') : '' }))}
+                        locale={nb}
+                        initialFocus
+                      />
+                    </PopoverContent>
+                  </Popover>
+                </div>
                 <div className="space-y-1">
                   <Label>Type</Label>
                   <Select value={regForm.type} onValueChange={v => setRegForm(p => ({ ...p, type: v }))}>
