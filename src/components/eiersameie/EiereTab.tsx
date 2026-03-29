@@ -13,10 +13,15 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Slider } from '@/components/ui/slider';
-import { AlertTriangle, Check, Plus, Pencil, Trash2, Building2, User, ArrowDown, ArrowUp } from 'lucide-react';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
+import { AlertTriangle, Check, Plus, Pencil, Trash2, Building2, User, ArrowDown, ArrowUp, CalendarIcon, ArrowRight, TrendingDown, TrendingUp } from 'lucide-react';
 import { toast } from 'sonner';
 import { formatBelop } from '@/lib/format';
+import { format, parse } from 'date-fns';
+import { nb } from 'date-fns/locale';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip as ReTooltip } from 'recharts';
+import { cn } from '@/lib/utils';
 
 interface Eier {
   id: string; navn: string; type: string; orgnr: string | null; identifikator: string | null;
