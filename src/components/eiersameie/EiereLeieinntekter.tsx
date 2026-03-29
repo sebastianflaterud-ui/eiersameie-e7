@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent } from '@/components/ui/card';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { formatBelop } from '@/lib/format';
 import { Eier, formatPct } from './types';
@@ -12,31 +12,40 @@ interface Props {
 
 export default function EiereLeieinntekter({ aktive }: Props) {
   const [liYear, setLiYear] = useState(new Date().getFullYear());
-  const [liData, setLiData] = useState<{ brutto: number; oppgjor: Record<string, number> }>({ brutto: 0, oppgjor: {} });
+  const [brutto, setBrutto] = useState(0);
+  const [totalKostnader, setTotalKostnader] = useState(0);
+  const [oppgjor, setOppgjor] = useState<Record<string, number>>({});
 
   useEffect(() => {
-    async function fetchLeieinntekter() {
+    async function fetchData() {
+      // Hent alle E7-transaksjoner for året
       const { data } = await supabase.from('transaksjoner').select('*')
-        .eq('kategori', 'Eiersameie E7').eq('retning', 'inn')
+        .eq('kategori', 'Eiersameie E7')
         .gte('dato', `${liYear}-01-01`).lte('dato', `${liYear}-12-31`);
-      const brutto = (data || []).filter(t => !t.er_oppgjor).reduce((s, t) => s + Number(t.belop), 0);
-      const oppgjorTxs = (data || []).filter(t => t.er_oppgjor);
-      const oppgjor: Record<string, number> = {};
-      for (const t of oppgjorTxs) {
+
+      const txs = data || [];
+      const realTxs = txs.filter(t => !t.er_oppgjor);
+
+      // Brutto leieinntekter (inn, ikke oppgjør)
+      const bruttoSum = realTxs.filter(t => t.retning === 'inn').reduce((s, t) => s + Number(t.belop), 0);
+      setBrutto(bruttoSum);
+
+      // Totale kostnader (ut, ikke oppgjør)
+      const kostnaderSum = realTxs.filter(t => t.retning === 'ut').reduce((s, t) => s + Number(t.belop), 0);
+      setTotalKostnader(kostnaderSum);
+
+      // Oppgjør per eier (faktisk utbetalt)
+      const oppgjorMap: Record<string, number> = {};
+      for (const t of txs.filter(t => t.er_oppgjor)) {
         const til = (t as any).oppgjor_til || 'Ukjent';
-        oppgjor[til] = (oppgjor[til] || 0) + Number(t.belop);
+        oppgjorMap[til] = (oppgjorMap[til] || 0) + Number(t.belop);
       }
-      const { data: utData } = await supabase.from('transaksjoner').select('*')
-        .eq('kategori', 'Eiersameie E7').eq('retning', 'ut')
-        .gte('dato', `${liYear}-01-01`).lte('dato', `${liYear}-12-31`);
-      for (const t of (utData || []).filter(t => t.er_oppgjor)) {
-        const til = (t as any).oppgjor_til || 'Ukjent';
-        oppgjor[til] = (oppgjor[til] || 0) + Number(t.belop);
-      }
-      setLiData({ brutto, oppgjor });
+      setOppgjor(oppgjorMap);
     }
-    fetchLeieinntekter();
+    fetchData();
   }, [liYear]);
+
+  const netto = brutto - totalKostnader;
 
   return (
     <div className="space-y-6">
@@ -49,6 +58,22 @@ export default function EiereLeieinntekter({ aktive }: Props) {
           </SelectContent>
         </Select>
       </div>
+
+      <div className="grid grid-cols-3 gap-4">
+        <Card><CardContent className="pt-4">
+          <div className="text-2xl font-bold text-green-600">{formatBelop(brutto)}</div>
+          <div className="text-sm text-muted-foreground">Brutto leieinntekter</div>
+        </CardContent></Card>
+        <Card><CardContent className="pt-4">
+          <div className="text-2xl font-bold text-red-600">{formatBelop(totalKostnader)}</div>
+          <div className="text-sm text-muted-foreground">Totale kostnader</div>
+        </CardContent></Card>
+        <Card><CardContent className="pt-4">
+          <div className={`text-2xl font-bold ${netto >= 0 ? 'text-green-600' : 'text-red-600'}`}>{formatBelop(netto)}</div>
+          <div className="text-sm text-muted-foreground">Netto resultat</div>
+        </CardContent></Card>
+      </div>
+
       <Card>
         <CardContent className="pt-6">
           <Table>
@@ -56,33 +81,53 @@ export default function EiereLeieinntekter({ aktive }: Props) {
               <TableRow>
                 <TableHead>Eier</TableHead>
                 <TableHead className="text-right">Inntektsandel</TableHead>
-                <TableHead className="text-right">Brutto leieinntekt</TableHead>
-                <TableHead className="text-right">Eiers andel</TableHead>
+                <TableHead className="text-right">Andel av inntekter</TableHead>
+                <TableHead className="text-right">Andel av kostnader</TableHead>
+                <TableHead className="text-right">Netto andel</TableHead>
                 <TableHead className="text-right">Faktisk mottatt</TableHead>
                 <TableHead className="text-right">Differanse</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {aktive.map(e => {
-                const andel = Math.round(liData.brutto * e.inntektsandel_prosent / 100);
-                const mottatt = liData.oppgjor[e.navn] || 0;
-                const diff = mottatt - andel;
+                const inntektAndel = Math.round(brutto * e.inntektsandel_prosent / 100);
+                const kostnadAndel = Math.round(totalKostnader * e.kostnadsandel_prosent / 100);
+                const nettoAndel = inntektAndel - kostnadAndel;
+                const mottatt = oppgjor[e.navn] || 0;
+                const diff = mottatt - nettoAndel;
                 return (
                   <TableRow key={e.id}>
                     <TableCell className="font-medium">{e.navn}</TableCell>
                     <TableCell className="text-right font-mono">{formatPct(e.inntektsandel_prosent)}</TableCell>
-                    <TableCell className="text-right font-mono">{formatBelop(liData.brutto)}</TableCell>
-                    <TableCell className="text-right font-mono">{formatBelop(andel)}</TableCell>
+                    <TableCell className="text-right font-mono text-green-600">{formatBelop(inntektAndel)}</TableCell>
+                    <TableCell className="text-right font-mono text-red-600">{formatBelop(kostnadAndel)}</TableCell>
+                    <TableCell className={`text-right font-mono font-semibold ${nettoAndel >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                      {formatBelop(nettoAndel)}
+                    </TableCell>
                     <TableCell className="text-right font-mono">{formatBelop(mottatt)}</TableCell>
                     <TableCell className={`text-right font-mono font-bold ${diff > 0 ? 'text-green-600' : diff < 0 ? 'text-red-600' : ''}`}>
                       {diff !== 0 && (diff > 0 ? '+' : '')}{formatBelop(diff)}
-                      {diff < 0 && e.inntektsandel_prosent > 0 && <span className="text-xs ml-1">(lån)</span>}
                     </TableCell>
                   </TableRow>
                 );
               })}
             </TableBody>
+            <TableFooter>
+              <TableRow>
+                <TableCell className="font-bold">Totalt</TableCell>
+                <TableCell></TableCell>
+                <TableCell className="text-right font-mono font-bold text-green-600">{formatBelop(brutto)}</TableCell>
+                <TableCell className="text-right font-mono font-bold text-red-600">{formatBelop(totalKostnader)}</TableCell>
+                <TableCell className={`text-right font-mono font-bold ${netto >= 0 ? 'text-green-600' : 'text-red-600'}`}>{formatBelop(netto)}</TableCell>
+                <TableCell className="text-right font-mono font-bold">{formatBelop(Object.values(oppgjor).reduce((s, v) => s + v, 0))}</TableCell>
+                <TableCell></TableCell>
+              </TableRow>
+            </TableFooter>
           </Table>
+          <p className="text-xs text-muted-foreground mt-3">
+            «Faktisk mottatt» hentes fra oppgjørstransaksjoner (transaksjoner merket som oppgjør med mottaker-eier).
+            Differanse viser avvik mellom netto andel og faktisk utbetalt.
+          </p>
         </CardContent>
       </Card>
     </div>
