@@ -234,13 +234,17 @@ export default function EiereTab() {
 
   return (
     <div className="space-y-6 mt-4">
+      <div>
+        <h2 className="text-2xl font-bold">Eiere</h2>
+        <p className="text-muted-foreground">Administrer eiere og eierandeler i sameiet</p>
+      </div>
       <Tabs value={tab} onValueChange={setTab}>
         <TabsList>
-          <TabsTrigger value="oversikt">Oversikt</TabsTrigger>
-          <TabsTrigger value="leieinntekter">Leieinntekter</TabsTrigger>
-          <TabsTrigger value="verdisimulator">Verdisimulator</TabsTrigger>
-          <TabsTrigger value="historikk">Historikk</TabsTrigger>
-          <TabsTrigger value="registrer">Registrer endring</TabsTrigger>
+          <TabsTrigger value="oversikt" className="gap-1.5"><User className="h-4 w-4" />Oversikt</TabsTrigger>
+          <TabsTrigger value="leieinntekter" className="gap-1.5">Leieinntekter</TabsTrigger>
+          <TabsTrigger value="verdisimulator" className="gap-1.5"><Building2 className="h-4 w-4" />Verdisimulator</TabsTrigger>
+          <TabsTrigger value="historikk" className="gap-1.5"><CalendarIcon className="h-4 w-4" />Historikk</TabsTrigger>
+          <TabsTrigger value="registrer" className="gap-1.5"><Plus className="h-4 w-4" />Registrer endring</TabsTrigger>
         </TabsList>
 
         <TabsContent value="oversikt" className="space-y-6">
