@@ -405,59 +405,74 @@ export default function EiereTab() {
           {historikk.map(ev => {
             const gains = ev.detaljer.filter(d => d.andel_etter > d.andel_for);
             const losses = ev.detaljer.filter(d => d.andel_etter < d.andel_for);
+            const totalGain = gains.reduce((s, d) => s + (d.andel_etter - d.andel_for), 0);
             return (
               <Card key={ev.id}>
-                <CardContent className="pt-4 space-y-3">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <span className="font-mono text-sm">{ev.dato}</span>
-                      <Badge variant="outline">{ev.type}</Badge>
-                    </div>
-                    <span className="font-medium">{ev.beskrivelse}</span>
+                <CardContent className="pt-5 space-y-4">
+                  {/* Header */}
+                  <div className="flex items-center gap-3">
+                    <CalendarIcon className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-lg font-semibold">
+                      {format(new Date(ev.dato), 'd. MMMM yyyy', { locale: nb })}
+                    </span>
+                    <Badge variant="outline" className="font-normal capitalize">{ev.type}</Badge>
                   </div>
+                  <p className="text-muted-foreground">{ev.beskrivelse}</p>
 
+                  {/* Visual summary */}
                   {(gains.length > 0 || losses.length > 0) && (
-                    <div className="flex gap-4 text-sm">
-                      {losses.map(d => (
-                        <span key={d.eier_navn} className="flex items-center gap-1 text-red-600">
-                          <ArrowDown className="h-3 w-3" />{d.eier_navn.split(' ')[0]} -{formatPct(d.andel_for - d.andel_etter)}
-                        </span>
-                      ))}
-                      {gains.map(d => (
-                        <span key={d.eier_navn} className="flex items-center gap-1 text-green-600">
-                          <ArrowUp className="h-3 w-3" />{d.eier_navn.split(' ')[0]} +{formatPct(d.andel_etter - d.andel_for)}
-                        </span>
-                      ))}
+                    <div className="flex items-center gap-4 p-3 bg-muted/50 rounded-lg flex-wrap">
+                      <div className="flex flex-col gap-1">
+                        {losses.map(d => (
+                          <span key={d.eier_navn} className="flex items-center gap-1.5 text-sm font-medium text-red-600">
+                            <TrendingDown className="h-4 w-4" />
+                            {d.eier_navn} <span className="font-bold">-{formatPct(d.andel_for - d.andel_etter)}</span>
+                          </span>
+                        ))}
+                      </div>
+                      {losses.length > 0 && gains.length > 0 && (
+                        <ArrowRight className="h-5 w-5 text-muted-foreground" />
+                      )}
+                      <div className="flex flex-col gap-1">
+                        {gains.map(d => (
+                          <span key={d.eier_navn} className="flex items-center gap-1.5 text-sm font-medium text-green-600">
+                            <TrendingUp className="h-4 w-4" />
+                            {d.eier_navn} <span className="font-bold">+{formatPct(d.andel_etter - d.andel_for)}</span>
+                          </span>
+                        ))}
+                      </div>
                     </div>
                   )}
 
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Eier</TableHead>
-                        <TableHead className="text-right">Før</TableHead>
-                        <TableHead className="text-right">Etter</TableHead>
-                        <TableHead className="text-right">Endring</TableHead>
-                        <TableHead>Merknad</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {ev.detaljer.map(d => {
-                        const endring = d.andel_etter - d.andel_for;
-                        return (
-                          <TableRow key={d.id}>
-                            <TableCell className="font-medium">{d.eier_navn}</TableCell>
-                            <TableCell className="text-right font-mono">{formatPct(d.andel_for)}</TableCell>
-                            <TableCell className="text-right font-mono">{formatPct(d.andel_etter)}</TableCell>
-                            <TableCell className={`text-right font-mono font-bold ${endring > 0 ? 'text-green-600' : endring < 0 ? 'text-red-600' : ''}`}>
-                              {endring > 0 ? '+' : ''}{formatPct(endring)}
-                            </TableCell>
-                            <TableCell className="text-sm text-muted-foreground">{d.merknad || '-'}</TableCell>
-                          </TableRow>
-                        );
-                      })}
-                    </TableBody>
-                  </Table>
+                  {/* Detail cards */}
+                  <div className="space-y-2">
+                    {ev.detaljer.map(d => {
+                      const endring = d.andel_etter - d.andel_for;
+                      return (
+                        <div key={d.id} className="flex items-center justify-between p-3 bg-muted/30 rounded-lg border">
+                          <div className="flex items-center gap-3">
+                            {endring < 0 && <TrendingDown className="h-4 w-4 text-red-500" />}
+                            {endring > 0 && <TrendingUp className="h-4 w-4 text-green-500" />}
+                            {endring === 0 && <div className="h-4 w-4" />}
+                            <div>
+                              <div className="font-medium">{d.eier_navn}</div>
+                              <div className="text-xs text-muted-foreground">{d.merknad || 'Uendret'}</div>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2 text-sm font-mono">
+                            <span className="text-muted-foreground">{formatPct(d.andel_for)}</span>
+                            <ArrowRight className="h-3 w-3 text-muted-foreground" />
+                            <span className="font-bold">{formatPct(d.andel_etter)}</span>
+                            {endring !== 0 && (
+                              <span className={cn("font-bold ml-1", endring > 0 ? 'text-green-600' : 'text-red-600')}>
+                                ({endring > 0 ? '+' : ''}{formatPct(endring)})
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
                 </CardContent>
               </Card>
             );
