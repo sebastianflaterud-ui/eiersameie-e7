@@ -150,13 +150,16 @@ export default function EiereLeieinntekter({ aktive }: Props) {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Måned</TableHead>
-                <TableHead className="text-right">Inntekter</TableHead>
-                <TableHead className="text-right">Kostnader</TableHead>
+                <TableHead rowSpan={2}>Måned</TableHead>
+                <TableHead rowSpan={2} className="text-right">Inntekter</TableHead>
+                <TableHead rowSpan={2} className="text-right">Kostnader</TableHead>
+                <TableHead colSpan={aktive.length} className="text-center border-b-0 text-xs text-muted-foreground">Resultat per eier</TableHead>
+                <TableHead rowSpan={2} className="text-right">Totalt</TableHead>
+              </TableRow>
+              <TableRow>
                 {aktive.map(e => (
                   <TableHead key={e.id} className="text-right text-xs">{e.navn.split(' ')[0]}</TableHead>
                 ))}
-                <TableHead className="text-right">Totalt</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
