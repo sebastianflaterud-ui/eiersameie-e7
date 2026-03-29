@@ -196,6 +196,7 @@ export default function EiereLeieinntekter({ aktive }: Props) {
                 <TableCell className="font-bold">Sum</TableCell>
                 <TableCell className="text-right font-mono font-bold text-green-600">{formatBelop(brutto)}</TableCell>
                 <TableCell className="text-right font-mono font-bold text-red-600">{formatBelop(totalKostnader)}</TableCell>
+                <TableCell className={`text-right font-mono font-bold ${netto >= 0 ? 'text-green-600' : 'text-red-600'}`}>{formatBelop(netto)}</TableCell>
                 {aktive.map(e => {
                   const eierResultat = Math.round(brutto * e.inntektsandel_prosent / 100) - Math.round(totalKostnader * e.kostnadsandel_prosent / 100);
                   return (
@@ -204,7 +205,6 @@ export default function EiereLeieinntekter({ aktive }: Props) {
                     </TableCell>
                   );
                 })}
-                <TableCell className={`text-right font-mono font-bold ${netto >= 0 ? 'text-green-600' : 'text-red-600'}`}>{formatBelop(netto)}</TableCell>
               </TableRow>
             </TableFooter>
           </Table>
