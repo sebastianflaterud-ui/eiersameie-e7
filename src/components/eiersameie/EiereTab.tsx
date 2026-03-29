@@ -419,7 +419,9 @@ export default function EiereTab() {
                     <span className="text-lg font-semibold">
                       {format(new Date(ev.dato), 'd. MMMM yyyy', { locale: nb })}
                     </span>
-                    <Badge variant="outline" className="font-normal capitalize">{ev.type}</Badge>
+                    <Badge variant="outline" className={cn("font-normal capitalize", ev.type === 'oppstart' && 'bg-green-100 text-green-800 border-green-200')}>
+                      {ev.type === 'oppstart' ? 'Opprinnelig' : ev.type === 'overføring' ? 'Overføring' : ev.type === 'justering' ? 'Justering' : ev.type}
+                    </Badge>
                   </div>
                   <p className="text-muted-foreground">{ev.beskrivelse}</p>
 
@@ -464,7 +466,7 @@ export default function EiereTab() {
                             </div>
                           </div>
                           <div className="flex items-center gap-2 text-sm font-mono">
-                            <span className="text-muted-foreground">{formatPct(d.andel_for)}</span>
+                            <span className="text-muted-foreground">{d.andel_for === 0 ? '-' : formatPct(d.andel_for)}</span>
                             <ArrowRight className="h-3 w-3 text-muted-foreground" />
                             <span className="font-bold">{formatPct(d.andel_etter)}</span>
                             {endring !== 0 && (
