@@ -22,6 +22,7 @@ import EiereOversikt from './EiereOversikt';
 import EiereLeieinntekter from './EiereLeieinntekter';
 import EiereVerdisimulator from './EiereVerdisimulator';
 import EiereHistorikk from './EiereHistorikk';
+import EiereHistorikkRediger from './EiereHistorikkRediger';
 import EiereRegistrerEndring from './EiereRegistrerEndring';
 
 const emptyForm = {
