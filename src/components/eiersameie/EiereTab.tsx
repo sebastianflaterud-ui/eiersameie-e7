@@ -39,6 +39,8 @@ export default function EiereTab() {
   const [form, setForm] = useState(emptyForm);
   const [tab, setTab] = useState('oversikt');
   const [historikk, setHistorikk] = useState<HistorikkEvent[]>([]);
+  const [editHistorikkEvent, setEditHistorikkEvent] = useState<HistorikkEvent | null>(null);
+  const [editHistorikkOpen, setEditHistorikkOpen] = useState(false);
 
   const fetchEiere = async () => {
     const { data } = await supabase.from('eiere').select('*').order('opprettet');
