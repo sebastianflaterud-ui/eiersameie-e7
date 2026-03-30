@@ -208,6 +208,13 @@ export default function EiereTab() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <EiereHistorikkRediger
+        event={editHistorikkEvent}
+        open={editHistorikkOpen}
+        onOpenChange={setEditHistorikkOpen}
+        onSaved={handleChanged}
+      />
     </div>
   );
 }
