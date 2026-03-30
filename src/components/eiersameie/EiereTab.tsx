@@ -22,6 +22,7 @@ import EiereOversikt from './EiereOversikt';
 import EiereLeieinntekter from './EiereLeieinntekter';
 import EiereVerdisimulator from './EiereVerdisimulator';
 import EiereHistorikk from './EiereHistorikk';
+import EiereHistorikkRediger from './EiereHistorikkRediger';
 import EiereRegistrerEndring from './EiereRegistrerEndring';
 
 const emptyForm = {
@@ -38,6 +39,8 @@ export default function EiereTab() {
   const [form, setForm] = useState(emptyForm);
   const [tab, setTab] = useState('oversikt');
   const [historikk, setHistorikk] = useState<HistorikkEvent[]>([]);
+  const [editHistorikkEvent, setEditHistorikkEvent] = useState<HistorikkEvent | null>(null);
+  const [editHistorikkOpen, setEditHistorikkOpen] = useState(false);
 
   const fetchEiere = async () => {
     const { data } = await supabase.from('eiere').select('*').order('opprettet');
@@ -122,7 +125,7 @@ export default function EiereTab() {
         </TabsContent>
 
         <TabsContent value="historikk" className="space-y-4">
-          <EiereHistorikk historikk={historikk} onEdit={(ev) => { toast.info('Redigering av historikk er under utvikling'); }} />
+          <EiereHistorikk historikk={historikk} onEdit={(ev) => { setEditHistorikkEvent(ev); setEditHistorikkOpen(true); }} />
         </TabsContent>
 
         <TabsContent value="registrer" className="space-y-6">
@@ -205,6 +208,13 @@ export default function EiereTab() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <EiereHistorikkRediger
+        event={editHistorikkEvent}
+        open={editHistorikkOpen}
+        onOpenChange={setEditHistorikkOpen}
+        onSaved={handleChanged}
+      />
     </div>
   );
 }
