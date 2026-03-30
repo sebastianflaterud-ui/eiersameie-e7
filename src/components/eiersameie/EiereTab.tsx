@@ -125,7 +125,7 @@ export default function EiereTab() {
         </TabsContent>
 
         <TabsContent value="historikk" className="space-y-4">
-          <EiereHistorikk historikk={historikk} onEdit={(ev) => { toast.info('Redigering av historikk er under utvikling'); }} />
+          <EiereHistorikk historikk={historikk} onEdit={(ev) => { setEditHistorikkEvent(ev); setEditHistorikkOpen(true); }} />
         </TabsContent>
 
         <TabsContent value="registrer" className="space-y-6">
