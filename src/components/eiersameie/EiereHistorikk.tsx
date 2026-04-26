@@ -1,11 +1,13 @@
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { CalendarIcon, ArrowRight, TrendingDown, TrendingUp, Pencil } from 'lucide-react';
+import { CalendarIcon, ArrowRight, TrendingDown, TrendingUp, Pencil, Download, FileSpreadsheet } from 'lucide-react';
 import { format } from 'date-fns';
 import { nb } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { HistorikkEvent, formatPct } from './types';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { exportHistorikkCsv, exportHistorikkXlsx } from './historikkExport';
 
 interface Props {
   historikk: HistorikkEvent[];
@@ -15,6 +17,23 @@ interface Props {
 export default function EiereHistorikk({ historikk, onEdit }: Props) {
   return (
     <div className="space-y-4">
+      <div className="flex justify-end">
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline" size="sm" disabled={historikk.length === 0}>
+              <Download className="h-4 w-4 mr-2" />Eksporter
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem onClick={() => exportHistorikkCsv(historikk)}>
+              <FileSpreadsheet className="h-4 w-4 mr-2" />CSV (.csv)
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => exportHistorikkXlsx(historikk)}>
+              <FileSpreadsheet className="h-4 w-4 mr-2" />Excel (.xlsx)
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
       {historikk.length === 0 && (
         <div className="text-center text-muted-foreground py-8">Ingen eierskapsendringer registrert ennå.</div>
       )}
